@@ -26,23 +26,25 @@ export function useCreateUser() {
 
   return useMutation({
     mutationFn: async (params: {
-      email: string
-      password: string
+      email:     string
+      password:  string
       full_name: string
-      role: string
-      region?: string
-      phone?: string
+      role:      string
+      region?:   string
+      phone?:    string
     }) => {
-      const { data, error } = await supabase.rpc('create_user', {
-        p_email:     params.email,
-        p_password:  params.password,
-        p_full_name: params.full_name,
-        p_role:      params.role,
-        p_region:    params.region ?? null,
-        p_phone:     params.phone  ?? null,
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
       })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Error al crear usuario')
+      }
+
       return data
     },
     onSuccess: () => {
