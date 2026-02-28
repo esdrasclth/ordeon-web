@@ -1,0 +1,81 @@
+'use client'
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { createClient } from '@/lib/supabase/client'
+import { Profile } from '@/types'
+
+const supabase = createClient()
+
+export function useUsers() {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name')
+
+      if (error) throw error
+      return data as Profile[]
+    },
+  })
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (params: {
+      email: string
+      password: string
+      full_name: string
+      role: string
+      region?: string
+      phone?: string
+    }) => {
+      const { data, error } = await supabase.rpc('create_user', {
+        p_email:     params.email,
+        p_password:  params.password,
+        p_full_name: params.full_name,
+        p_role:      params.role,
+        p_region:    params.region ?? null,
+        p_phone:     params.phone  ?? null,
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string
+      full_name: string
+      role: string
+      region?: string
+      phone?: string
+      active: boolean
+    }) => {
+      const { error } = await supabase.rpc('update_user_profile', {
+        p_id:        params.id,
+        p_full_name: params.full_name,
+        p_role:      params.role,
+        p_region:    params.region ?? null,
+        p_phone:     params.phone  ?? null,
+        p_active:    params.active,
+      })
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
+}
