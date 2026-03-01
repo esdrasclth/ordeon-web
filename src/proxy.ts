@@ -1,5 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { canAccess } from '@/lib/permissions'
+import { UserRole } from '@/types'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -9,9 +11,7 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
@@ -26,16 +26,49 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  const isPublicRoute = request.nextUrl.pathname === '/'
+  const isAuthRoute   = pathname.startsWith('/login')
+  const isPublicRoute = pathname === '/'
+  const isApiRoute    = pathname.startsWith('/api')
 
-  if (!user && !isAuthRoute && !isPublicRoute) {
+  if (isPublicRoute || isApiRoute) return supabaseResponse
+
+  if (!user && !isAuthRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (user && isAuthRoute) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  if (user && pathname.startsWith('/dashboard')) {
+    // Leer el rol desde los metadatos de la sesión primero
+    // y como fallback consultar profiles
+    let role: UserRole = 'vendedor'
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role) {
+        role = profile.role as UserRole
+      }
+    } catch {
+      // Si falla la consulta, denegar acceso a rutas protegidas
+      role = 'vendedor'
+    }
+
+    const allowed = canAccess(role, pathname)
+
+    if (!allowed) {
+      const url = new URL('/dashboard', request.url)
+      url.searchParams.set('denied', '1')
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

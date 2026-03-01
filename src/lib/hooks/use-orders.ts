@@ -6,9 +6,9 @@ import { SalesOrder, OrderItemForm } from '@/types'
 
 const supabase = createClient()
 
-export function useOrders(status?: string) {
+export function useOrders(status?: string, vendorId?: string) {
   return useQuery({
-    queryKey: ['orders', status],
+    queryKey: ['orders', status, vendorId],
     queryFn: async () => {
       let query = supabase
         .from('sales_orders')
@@ -21,6 +21,11 @@ export function useOrders(status?: string) {
 
       if (status && status !== 'todos') {
         query = query.eq('status', status)
+      }
+
+      // Si se pasa vendorId, filtrar solo sus órdenes
+      if (vendorId) {
+        query = query.eq('vendor_id', vendorId)
       }
 
       const { data, error } = await query

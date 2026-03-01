@@ -14,38 +14,41 @@ import {
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { OrderStatus } from '@/types'
 import { toast } from 'sonner'
+import { usePermissions } from '@/lib/hooks/use-current-user'
 
 const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus; label: string; color: string }>> = {
-  pendiente:      { status: 'en_preparacion', label: 'Iniciar Preparación', color: '#2980b9' },
-  en_preparacion: { status: 'preparada',      label: 'Marcar como Preparada', color: '#27ae60' },
-  preparada:      { status: 'despachada',      label: 'Marcar como Despachada', color: '#16a085' },
-  despachada:     { status: 'facturada',       label: 'Registrar Factura',     color: '#468189' },
+  pendiente: { status: 'en_preparacion', label: 'Iniciar Preparación', color: '#2980b9' },
+  en_preparacion: { status: 'preparada', label: 'Marcar como Preparada', color: '#27ae60' },
+  preparada: { status: 'despachada', label: 'Marcar como Despachada', color: '#16a085' },
+  despachada: { status: 'facturada', label: 'Registrar Factura', color: '#468189' },
 }
 
 export default function OrderDetailPage() {
-  const { id }   = useParams<{ id: string }>()
-  const router   = useRouter()
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { data: order, isLoading } = useOrder(id)
   const updateStatus = useUpdateOrderStatus()
 
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
-  const [statusNotes,     setStatusNotes]     = useState('')
-  const [invoiceNumber,   setInvoiceNumber]   = useState('')
+  const [statusNotes, setStatusNotes] = useState('')
+  const [invoiceNumber, setInvoiceNumber] = useState('')
 
   const fmt = (n: number) =>
     `L. ${n.toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
   const nextAction = order ? NEXT_STATUS[order.status as OrderStatus] : null
 
+  const { actions, role } = usePermissions()
+
   const handleStatusChange = async () => {
     if (!order || !nextAction) return
     try {
       await updateStatus.mutateAsync({
         order_id: order.id,
-        status:   nextAction.status,
-        notes:    statusNotes || undefined,
-        invoice:  nextAction.status === 'facturada' ? invoiceNumber : undefined,
+        status: nextAction.status,
+        notes: statusNotes || undefined,
+        invoice: nextAction.status === 'facturada' ? invoiceNumber : undefined,
       })
       toast.success(`Orden actualizada a: ${STATUS_CONFIG[nextAction.status].label}`)
       setShowStatusModal(false)
@@ -61,8 +64,8 @@ export default function OrderDetailPage() {
     try {
       await updateStatus.mutateAsync({
         order_id: order.id,
-        status:   'cancelada',
-        notes:    statusNotes || 'Orden cancelada',
+        status: 'cancelada',
+        notes: statusNotes || 'Orden cancelada',
       })
       toast.success('Orden cancelada')
       setShowCancelModal(false)
@@ -116,23 +119,37 @@ export default function OrderDetailPage() {
 
         {/* Acciones */}
         <div className="flex gap-2">
-          {order.status !== 'cancelada' && order.status !== 'facturada' && (
-            <Button
-              variant="outline"
-              onClick={() => setShowCancelModal(true)}
-              style={{ color: '#d94f4f', borderColor: '#d94f4f' }}
-            >
-              Cancelar Orden
-            </Button>
-          )}
-          {nextAction && (
-            <Button
-              onClick={() => setShowStatusModal(true)}
-              style={{ background: nextAction.color, color: '#fff' }}
-            >
-              {nextAction.label}
-            </Button>
-          )}
+          {/* Cancelar: solo si tiene permiso y no está en estado final */}
+          {actions.canCancelOrder &&
+            order.status !== 'cancelada' &&
+            order.status !== 'facturada' && (
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelModal(true)}
+                style={{ color: '#d94f4f', borderColor: '#d94f4f' }}
+              >
+                Cancelar Orden
+              </Button>
+            )}
+
+          {/* Avanzar estado: según rol */}
+          {nextAction && (() => {
+            // Facturación solo puede facturar
+            if (role === 'facturacion' && nextAction.status !== 'facturada') return null
+            // Almacén no puede facturar
+            if (role === 'almacen' && nextAction.status === 'facturada') return null
+            // Vendedor no puede cambiar estado
+            if (role === 'vendedor') return null
+
+            return (
+              <Button
+                onClick={() => setShowStatusModal(true)}
+                style={{ background: nextAction.color, color: '#fff' }}
+              >
+                {nextAction.label}
+              </Button>
+            )
+          })()}
         </div>
       </div>
 
@@ -304,11 +321,12 @@ export default function OrderDetailPage() {
             <h3 className="font-bold text-sm mb-3" style={{ color: '#031926' }}>Detalles</h3>
             <div className="space-y-2">
               {[
-                { label: 'Vendedor',        value: order.profiles?.full_name },
+                { label: 'Vendedor', value: order.profiles?.full_name },
                 { label: 'Lista de precios', value: `Lista ${order.price_list}` },
                 { label: 'Términos de pago', value: order.payment_terms },
                 { label: 'Método de entrega', value: order.delivery_method },
-                { label: 'Fecha estimada',
+                {
+                  label: 'Fecha estimada',
                   value: order.delivery_date
                     ? new Date(order.delivery_date).toLocaleDateString('es-HN')
                     : '—'

@@ -5,18 +5,20 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package2, Users, UserCog,
-  Settings, LogOut, ShoppingCart, ChevronLeft, ChevronRight
+  Settings, LogOut, ShoppingCart,
+  ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useState } from 'react'
 import { UserRole } from '@/types'
+import { ROLE_ROUTES } from '@/lib/permissions'
 
-const NAV_ITEMS = [
-  { href: '/dashboard',            label: 'Dashboard',      icon: LayoutDashboard, roles: ['admin','supervisor','vendedor','almacen','facturacion'] },
-  { href: '/dashboard/productos',  label: 'Productos',      icon: Package2,        roles: ['admin','supervisor'] },
-  { href: '/dashboard/clientes',   label: 'Clientes',       icon: Users,           roles: ['admin','supervisor','vendedor'] },
-  { href: '/dashboard/ordenes',    label: 'Órdenes',        icon: ShoppingCart,    roles: ['admin','supervisor','vendedor','almacen','facturacion'] },
-  { href: '/dashboard/usuarios',   label: 'Usuarios',       icon: UserCog,         roles: ['admin'] },
-  { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings,      roles: ['admin'] },
+const ALL_NAV_ITEMS = [
+  { href: '/dashboard',               label: 'Dashboard',      icon: LayoutDashboard },
+  { href: '/dashboard/productos',     label: 'Productos',      icon: Package2        },
+  { href: '/dashboard/clientes',      label: 'Clientes',       icon: Users           },
+  { href: '/dashboard/ordenes',       label: 'Órdenes',        icon: ShoppingCart    },
+  { href: '/dashboard/usuarios',      label: 'Usuarios',       icon: UserCog         },
+  { href: '/dashboard/configuracion', label: 'Configuración',  icon: Settings        },
 ]
 
 interface SidebarProps {
@@ -25,15 +27,22 @@ interface SidebarProps {
 }
 
 export function Sidebar({ userName, userRole }: SidebarProps) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClient()
+  const pathname  = usePathname()
+  const router    = useRouter()
+  const supabase  = createClient()
   const [collapsed, setCollapsed] = useState(false)
 
-  const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  const initials = userName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
-  const visibleItems = NAV_ITEMS.filter(item =>
-    item.roles.includes(userRole)
+  // Filtrar nav items según rutas permitidas del rol
+  const allowedRoutes = ROLE_ROUTES[userRole] ?? []
+  const visibleItems  = ALL_NAV_ITEMS.filter(item =>
+    allowedRoutes.includes(item.href)
   )
 
   const handleLogout = async () => {
@@ -42,13 +51,21 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
     router.refresh()
   }
 
+  const ROLE_LABELS: Record<UserRole, string> = {
+    admin:       'Administrador',
+    supervisor:  'Supervisor',
+    vendedor:    'Vendedor',
+    almacen:     'Almacén',
+    facturacion: 'Facturación',
+  }
+
   return (
     <aside
       className="relative flex flex-col h-screen transition-all duration-300 flex-shrink-0"
       style={{
-        width: collapsed ? 64 : 220,
-        background: '#031926',
-        borderRight: '1px solid rgba(244,233,205,0.08)'
+        width:       collapsed ? 64 : 220,
+        background:  '#031926',
+        borderRight: '1px solid rgba(244,233,205,0.08)',
       }}
     >
       {/* Toggle */}
@@ -59,20 +76,26 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
       >
         {collapsed
           ? <ChevronRight className="w-3 h-3" />
-          : <ChevronLeft className="w-3 h-3" />
+          : <ChevronLeft  className="w-3 h-3" />
         }
       </button>
 
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5"
-        style={{ borderBottom: '1px solid rgba(244,233,205,0.08)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: '#468189' }}>
+      <div
+        className="flex items-center gap-3 px-4 py-5"
+        style={{ borderBottom: '1px solid rgba(244,233,205,0.08)' }}
+      >
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: '#468189' }}
+        >
           <Package2 className="w-4 h-4" style={{ color: '#F4E9CD' }} />
         </div>
         {!collapsed && (
-          <span className="font-bold text-base tracking-wide"
-            style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}>
+          <span
+            className="font-bold text-base tracking-wide"
+            style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}
+          >
             Ordeon
           </span>
         )}
@@ -81,7 +104,7 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-hidden">
         {visibleItems.map(item => {
-          const Icon = item.icon
+          const Icon   = item.icon
           const active = pathname === item.href
           return (
             <Link
@@ -90,8 +113,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150"
               style={{
                 background: active ? 'rgba(68,129,137,0.3)' : 'transparent',
-                border: active ? '1px solid rgba(68,129,137,0.4)' : '1px solid transparent',
-                color: active ? '#F4E9CD' : 'rgba(244,233,205,0.55)',
+                border:     active ? '1px solid rgba(68,129,137,0.4)' : '1px solid transparent',
+                color:      active ? '#F4E9CD' : 'rgba(244,233,205,0.55)',
               }}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
@@ -106,10 +129,15 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
       </nav>
 
       {/* User */}
-      <div className="px-3 py-4" style={{ borderTop: '1px solid rgba(244,233,205,0.08)' }}>
+      <div
+        className="px-3 py-4"
+        style={{ borderTop: '1px solid rgba(244,233,205,0.08)' }}
+      >
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-            style={{ background: '#468189', color: '#F4E9CD' }}>
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+            style={{ background: '#468189', color: '#F4E9CD' }}
+          >
             {initials}
           </div>
           {!collapsed && (
@@ -117,8 +145,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
               <p className="text-xs font-semibold truncate" style={{ color: '#F4E9CD' }}>
                 {userName}
               </p>
-              <p className="text-xs capitalize" style={{ color: 'rgba(244,233,205,0.45)' }}>
-                {userRole}
+              <p className="text-xs" style={{ color: 'rgba(244,233,205,0.45)' }}>
+                {ROLE_LABELS[userRole] ?? userRole}
               </p>
             </div>
           )}
