@@ -167,7 +167,7 @@ export default function OrdenesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-8 overflow-x-auto pb-1 pt-2">
         {TABS.map(tab => (
           <button
             key={tab.value}

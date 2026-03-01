@@ -17,12 +17,14 @@ import {
 import { Plus, Search, Pencil, PackageX } from 'lucide-react'
 import { Product } from '@/types'
 import { toast } from 'sonner'
+import { Trash2 } from 'lucide-react'
 
 export default function ProductosPage() {
   const { data: products, isLoading } = useProducts()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -54,13 +56,20 @@ export default function ProductosPage() {
     }
   }
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`¿Desactivar el producto "${name}"?`)) return
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro que deseas eliminar este producto? Esta acción no se puede deshacer.')) return
+    setDeletingId(id)
     try {
-      await updateProduct.mutateAsync({ id, active: false })
-      toast.success('Producto desactivado')
-    } catch {
-      toast.error('Error al desactivar el producto')
+      await deleteProduct.mutateAsync(id)
+      toast.success('Producto eliminado correctamente')
+    } catch (e: any) {
+      if (e.message?.includes('orden')) {
+        toast.error('No se puede eliminar — tiene órdenes asociadas. Desactívalo desde el formulario de edición.')
+      } else {
+        toast.error('Error al eliminar el producto')
+      }
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -86,7 +95,7 @@ export default function ProductosPage() {
       </div>
 
       {/* Búsqueda */}
-      <div className="relative mb-5">
+      <div className="relative mb-8">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9DBEBB' }} />
         <Input
           value={search}
@@ -166,14 +175,25 @@ export default function ProductosPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingProduct(product)}
-                      style={{ color: '#468189' }}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingProduct(product)}
+                        style={{ color: '#468189' }}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(product.id)}
+                        disabled={deleteProduct.isPending && deletingId === product.id}
+                        style={{ color: '#d94f4f' }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
