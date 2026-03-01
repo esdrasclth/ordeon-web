@@ -22,11 +22,13 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard',
     '/dashboard/ordenes',
     '/dashboard/ordenes/nueva',
+    '/dashboard/clientes',
   ],
   almacen: [
     '/dashboard',
     '/dashboard/ordenes',
     '/dashboard/ordenes/nueva',
+    '/dashboard/clientes',
   ],
   facturacion: [
     '/dashboard',

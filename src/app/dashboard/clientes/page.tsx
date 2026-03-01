@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useClients, useCreateClient, useUpdateClient } from '@/lib/hooks/use-clients'
+import { useRouter } from 'next/navigation'
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/lib/hooks/use-clients'
 import { ClientForm } from '@/components/clients/client-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,9 +10,11 @@ import { Badge } from '@/components/ui/badge'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog'
-import { Plus, Search, Pencil, Users } from 'lucide-react'
+import { Plus, Search, Pencil, Users, Trash2, Eye } from 'lucide-react'
 import { Client } from '@/types'
 import { toast } from 'sonner'
+import { usePermissions } from '@/lib/hooks/use-current-user'
+import Link from 'next/link'
 
 function CreditBar({ balance, limit }: { balance: number; limit: number }) {
   const pct = limit > 0 ? Math.min((balance / limit) * 100, 100) : 0
@@ -26,10 +29,8 @@ function CreditBar({ balance, limit }: { balance: number; limit: number }) {
         </span>
       </div>
       <div className="h-1.5 rounded-full" style={{ background: '#e8efee' }}>
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, background: color }}
-        />
+        <div className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, background: color }} />
       </div>
       <p className="text-xs mt-1" style={{ color: '#9DBEBB' }}>
         Límite: L. {Number(limit).toLocaleString('es-HN', { minimumFractionDigits: 2 })}
@@ -38,12 +39,17 @@ function CreditBar({ balance, limit }: { balance: number; limit: number }) {
   )
 }
 
-function ClientCard({ client, onEdit }: { client: Client; onEdit: () => void }) {
+function ClientCard({ client, onEdit, onDelete, canManage }: {
+  client: Client
+  onEdit: () => void
+  onDelete: () => void
+  canManage: boolean
+}) {
   const overCredit = client.current_balance >= client.credit_limit && client.credit_limit > 0
   const statusColors = {
-    active:   { bg: '#27ae60', label: 'Activo' },
-    blocked:  { bg: '#d94f4f', label: 'Bloqueado' },
-    inactive: { bg: '#bbb',    label: 'Inactivo' },
+    active: { bg: '#27ae60', label: 'Activo' },
+    blocked: { bg: '#d94f4f', label: 'Bloqueado' },
+    inactive: { bg: '#bbb', label: 'Inactivo' },
   }
   const status = statusColors[client.status]
 
@@ -93,20 +99,31 @@ function ClientCard({ client, onEdit }: { client: Client; onEdit: () => void }) 
       )}
 
       {/* Footer */}
-      <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid #f0f0f0' }}>
+      <div className="flex justify-between items-center pt-3"
+        style={{ borderTop: '1px solid #f0f0f0' }}>
         <Badge style={{ background: status.bg, color: '#fff', border: 'none', fontSize: 11 }}>
           {status.label}
         </Badge>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onEdit}
-          className="h-7 px-2 text-xs font-semibold"
-          style={{ color: '#468189' }}
-        >
-          <Pencil className="w-3 h-3 mr-1" />
-          Editar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Link href={`/dashboard/clientes/${client.id}`}>
+            <Button size="sm" variant="ghost" className="h-7 px-2"
+              style={{ color: '#468189' }}>
+              <Eye className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+          {canManage && (
+            <>
+              <Button size="sm" variant="ghost" onClick={onEdit}
+                className="h-7 px-2" style={{ color: '#468189' }}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onDelete}
+                className="h-7 px-2" style={{ color: '#d94f4f' }}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -116,17 +133,25 @@ export default function ClientesPage() {
   const { data: clients, isLoading } = useClients()
   const createClient = useCreateClient()
   const updateClient = useUpdateClient()
+  const deleteClient = useDeleteClient()
+  const { actions } = usePermissions()
 
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  const filtered = clients?.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.rtn ?? '').includes(search) ||
-    (c.city ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.contact_name ?? '').toLowerCase().includes(search.toLowerCase())
-  ) ?? []
+  const filtered = clients?.filter(c => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      (c.rtn ?? '').includes(search) ||
+      (c.city ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.contact_name ?? '').toLowerCase().includes(search.toLowerCase())
+
+    const matchesStatus = statusFilter === 'all' || c.status === statusFilter
+
+    return matchesSearch && matchesStatus
+  }) ?? []
 
   const handleCreate = async (data: any) => {
     try {
@@ -134,11 +159,7 @@ export default function ClientesPage() {
       toast.success('Cliente creado correctamente')
       setShowForm(false)
     } catch (e: any) {
-      if (e.message?.includes('rtn')) {
-        toast.error('Ya existe un cliente con ese RTN')
-      } else {
-        toast.error('Error al crear el cliente')
-      }
+      toast.error(e.message?.includes('rtn') ? 'Ya existe un cliente con ese RTN' : 'Error al crear el cliente')
     }
   }
 
@@ -148,19 +169,39 @@ export default function ClientesPage() {
       await updateClient.mutateAsync({ id: editingClient.id, ...data })
       toast.success('Cliente actualizado')
       setEditingClient(null)
-    } catch {
+    } catch (e: any) {
+      console.log('Error completo:', e)
+      console.log('Error message:', e?.message)
+      console.log('Error details:', JSON.stringify(e, null, 2))
       toast.error('Error al actualizar el cliente')
     }
   }
 
-  const totalBlocked = clients?.filter(c => c.current_balance >= c.credit_limit && c.credit_limit > 0).length ?? 0
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro que deseas eliminar este cliente?')) return
+    try {
+      await deleteClient.mutateAsync(id)
+      toast.success('Cliente eliminado')
+    } catch (e: any) {
+      if (e.message?.includes('orden')) {
+        toast.error('No se puede eliminar — tiene órdenes asociadas. Desactívalo en su lugar.')
+      } else {
+        toast.error('Error al eliminar el cliente')
+      }
+    }
+  }
+
+  const totalBlocked = clients?.filter(c =>
+    c.current_balance >= c.credit_limit && c.credit_limit > 0
+  ).length ?? 0
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+          <h1 className="text-3xl font-bold"
+            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
             Clientes
           </h1>
           <p className="mt-1 text-sm" style={{ color: '#468189' }}>
@@ -172,15 +213,19 @@ export default function ClientesPage() {
             )}
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} style={{ background: '#468189', color: '#F4E9CD' }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Cliente
-        </Button>
+        {actions.canManageClients && (
+          <Button onClick={() => setShowForm(true)}
+            style={{ background: '#468189', color: '#F4E9CD' }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Cliente
+          </Button>
+        )}
       </div>
 
       {/* Búsqueda */}
       <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9DBEBB' }} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+          style={{ color: '#9DBEBB' }} />
         <Input
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -190,11 +235,44 @@ export default function ClientesPage() {
         />
       </div>
 
-      {/* Grid de cards */}
+      {/* Filtro estado */}
+      <div className="flex gap-2 mb-8">
+        {[
+          { value: 'all', label: 'Todos', count: clients?.length ?? 0 },
+          { value: 'active', label: 'Activos', count: clients?.filter(c => c.status === 'active').length ?? 0 },
+          { value: 'blocked', label: 'Bloqueados', count: clients?.filter(c => c.status === 'blocked').length ?? 0 },
+          { value: 'inactive', label: 'Inactivos', count: clients?.filter(c => c.status === 'inactive').length ?? 0 },
+        ].map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setStatusFilter(tab.value)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: statusFilter === tab.value ? '#468189' : '#fff',
+              color: statusFilter === tab.value ? '#F4E9CD' : '#777',
+              border: `1px solid ${statusFilter === tab.value ? '#468189' : '#ddd'}`,
+            }}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span className="text-xs px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: statusFilter === tab.value ? 'rgba(244,233,205,0.3)' : '#f0f0f0',
+                  color: statusFilter === tab.value ? '#F4E9CD' : '#888',
+                }}>
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-48 rounded-xl animate-pulse" style={{ background: '#e8efee' }} />
+            <div key={i} className="h-48 rounded-xl animate-pulse"
+              style={{ background: '#e8efee' }} />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -210,46 +288,49 @@ export default function ClientesPage() {
               key={client.id}
               client={client}
               onEdit={() => setEditingClient(client)}
+              onDelete={() => handleDelete(client.id)}
+              canManage={actions.canManageClients}
             />
           ))}
         </div>
       )}
 
       {/* Modal Crear */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-              Nuevo Cliente
-            </DialogTitle>
-          </DialogHeader>
-          <ClientForm
-            onSubmit={handleCreate}
-            onCancel={() => setShowForm(false)}
-            loading={createClient.isPending}
-          />
-        </DialogContent>
-      </Dialog>
+      {showForm && (
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogContent className="max-w-lg" aria-describedby={undefined}>
+            <DialogHeader>
+              <DialogTitle style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+                Nuevo Cliente
+              </DialogTitle>
+            </DialogHeader>
+            <ClientForm
+              onSubmit={handleCreate}
+              onCancel={() => setShowForm(false)}
+              loading={createClient.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Modal Editar */}
-      <Dialog open={!!editingClient} onOpenChange={() => setEditingClient(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-              Editar Cliente
-            </DialogTitle>
-          </DialogHeader>
-          {editingClient && (
+      {editingClient && (
+        <Dialog open={!!editingClient} onOpenChange={() => setEditingClient(null)}>
+          <DialogContent className="max-w-lg" aria-describedby={undefined}>
+            <DialogHeader>
+              <DialogTitle style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+                Editar Cliente
+              </DialogTitle>
+            </DialogHeader>
             <ClientForm
               client={editingClient}
               onSubmit={handleUpdate}
               onCancel={() => setEditingClient(null)}
               loading={updateClient.isPending}
             />
-          )}
-        </DialogContent>
-      </Dialog>
-
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
