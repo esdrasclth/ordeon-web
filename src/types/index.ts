@@ -17,7 +17,8 @@ export interface Product {
   code: string
   name: string
   description: string | null
-  category_id: string | null
+  category_id?: string | null
+  product_categories?: ProductCategory | null
   unit: string
   price_a: number
   price_b: number
@@ -28,6 +29,8 @@ export interface Product {
   active: boolean
   created_at: string
   updated_at: string
+  purchase_price?: number
+  stock_reserved?: number
 }
 
 export interface Client {
@@ -61,64 +64,86 @@ export type OrderStatus =
   | 'cancelada'
 
 export interface SalesOrder {
-  id:              string
-  order_number:    number
-  client_id:       string
-  vendor_id:       string
-  status:          OrderStatus
-  order_date:      string
-  delivery_date:   string | null
-  payment_terms:   string
+  id: string
+  order_number: number
+  client_id: string
+  vendor_id: string
+  status: OrderStatus
+  order_date: string
+  delivery_date: string | null
+  payment_terms: string
   delivery_method: string
-  warehouse_id:    string | null
-  price_list:      string
-  subtotal:        number
-  isv_amount:      number
+  warehouse_id: string | null
+  price_list: string
+  subtotal: number
+  isv_amount: number
   discount_amount: number
-  total:           number
-  notes:           string | null
-  invoice_number:  string | null
-  invoiced_at:     string | null
-  created_at:      string
-  updated_at:      string
+  total: number
+  notes: string | null
+  invoice_number: string | null
+  invoiced_at: string | null
+  created_at: string
+  updated_at: string
   // Relaciones
-  clients?:        { name: string; rtn: string | null }
-  profiles?:       { full_name: string }
+  clients?: { name: string; rtn: string | null }
+  profiles?: { full_name: string }
 }
 
 export interface SalesOrderItem {
-  id:              string
-  order_id:        string
-  product_id:      string
-  quantity:        number
-  unit_price:      number
+  id: string
+  order_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
   unit_price_base: number
-  isv_rate:        number
-  isv_amount:      number
-  discount_pct:    number
+  isv_rate: number
+  isv_amount: number
+  discount_pct: number
   discount_amount: number
-  line_total:      number
-  created_at:      string
+  line_total: number
+  created_at: string
   // Relaciones
-  products?:       { name: string; code: string; unit: string }
+  products?: { name: string; code: string; unit: string }
 }
 
 export interface OrderStatusLog {
-  id:         string
-  order_id:   string
-  status:     OrderStatus
+  id: string
+  order_id: string
+  status: OrderStatus
   changed_by: string | null
-  notes:      string | null
+  notes: string | null
   created_at: string
-  profiles?:  { full_name: string }
+  profiles?: { full_name: string }
 }
 
 export interface OrderItemForm {
-  product_id:   string
+  product_id: string
   product_name: string
   product_code: string
-  unit:         string
-  quantity:     number
-  unit_price:   number
+  unit: string
+  quantity: number
+  unit_price: number
   discount_pct: number
+}
+
+export interface ProductCategory {
+  id: string
+  name: string
+  description: string | null
+  color: string
+  active: boolean
+  created_at: string
+}
+
+export interface StockMovement {
+  id: string
+  product_id: string
+  type: 'entrada' | 'salida' | 'ajuste' | 'venta' | 'devolucion'
+  quantity: number
+  stock_before: number
+  stock_after: number
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  profiles?: { full_name: string }
 }

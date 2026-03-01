@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Loader2, Plus, Trash2, Search, AlertCircle } from 'lucide-react'
 import { OrderItemForm, Client } from '@/types'
+import { toast } from 'sonner'
 
 interface OrderFormProps {
   vendorId: string
@@ -61,17 +62,28 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
   }
 
   const addProduct = (product: any) => {
+    const disponible = Number(product.stock) - Number((product as any).stock_reserved ?? 0)
     const priceList = selectedClient?.price_list ?? 'B'
     const price = getPriceForClient(product, priceList)
 
     const exists = items.find(i => i.product_id === product.id)
+
     if (exists) {
+      const nuevaCantidad = exists.quantity + 1
+      if (nuevaCantidad > disponible) {
+        toast.error(`Stock insuficiente. Solo hay ${disponible} ${product.unit} disponibles.`)
+        return
+      }
       setItems(prev => prev.map(i =>
         i.product_id === product.id
-          ? { ...i, quantity: i.quantity + 1 }
+          ? { ...i, quantity: nuevaCantidad }
           : i
       ))
     } else {
+      if (disponible <= 0) {
+        toast.error(`Sin stock disponible para "${product.name}"`)
+        return
+      }
       setItems(prev => [...prev, {
         product_id: product.id,
         product_name: product.name,
@@ -91,6 +103,14 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
   }
 
   const updateItem = (productId: string, field: keyof OrderItemForm, value: number) => {
+    if (field === 'quantity') {
+      const product = products?.find(p => p.id === productId)
+      const disponible = Number(product?.stock ?? 0) - Number((product as any)?.stock_reserved ?? 0)
+      if (value > disponible) {
+        toast.error(`Solo hay ${disponible} ${product?.unit} disponibles`)
+        return
+      }
+    }
     setItems(prev => prev.map(i =>
       i.product_id === productId ? { ...i, [field]: value } : i
     ))
@@ -308,9 +328,14 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold" style={{ color: '#468189' }}>{fmt(price)}</p>
-                          <p className="text-xs" style={{ color: p.stock > 0 ? '#27ae60' : '#d94f4f' }}>
-                            Stock: {p.stock}
-                          </p>
+                          {(() => {
+                            const disponible = Number(p.stock) - Number((p as any).stock_reserved ?? 0)
+                            return (
+                              <p className="text-xs" style={{ color: disponible <= 0 ? '#d94f4f' : '#27ae60' }}>
+                                Disp: {disponible} {p.unit}
+                              </p>
+                            )
+                          })()}
                         </div>
                       </button>
                     )

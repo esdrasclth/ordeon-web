@@ -11,14 +11,18 @@ import {
 import { useState } from 'react'
 import { UserRole } from '@/types'
 import { ROLE_ROUTES } from '@/lib/permissions'
+import { ArrowLeftRight } from 'lucide-react'
+import { Boxes } from 'lucide-react'
 
 const ALL_NAV_ITEMS = [
-  { href: '/dashboard',               label: 'Dashboard',      icon: LayoutDashboard },
-  { href: '/dashboard/productos',     label: 'Productos',      icon: Package2        },
-  { href: '/dashboard/clientes',      label: 'Clientes',       icon: Users           },
-  { href: '/dashboard/ordenes',       label: 'Órdenes',        icon: ShoppingCart    },
-  { href: '/dashboard/usuarios',      label: 'Usuarios',       icon: UserCog         },
-  { href: '/dashboard/configuracion', label: 'Configuración',  icon: Settings        },
+  { href: '/dashboard',              label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/dashboard/ordenes',      label: 'Órdenes',      icon: ShoppingCart    },
+  { href: '/dashboard/inventario',   label: 'Inventario',   icon: Boxes           },
+  { href: '/dashboard/movimientos',  label: 'Movimientos',  icon: ArrowLeftRight  },
+  { href: '/dashboard/productos',    label: 'Productos',    icon: Package2        },
+  { href: '/dashboard/clientes',     label: 'Clientes',     icon: Users           },
+  { href: '/dashboard/usuarios',     label: 'Usuarios',     icon: UserCog         },
+  { href: '/dashboard/configuracion',label: 'Configuración',icon: Settings        },
 ]
 
 interface SidebarProps {
@@ -27,9 +31,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ userName, userRole }: SidebarProps) {
-  const pathname  = usePathname()
-  const router    = useRouter()
-  const supabase  = createClient()
+  const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
   const [collapsed, setCollapsed] = useState(false)
 
   const initials = userName
@@ -41,7 +45,7 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
 
   // Filtrar nav items según rutas permitidas del rol
   const allowedRoutes = ROLE_ROUTES[userRole] ?? []
-  const visibleItems  = ALL_NAV_ITEMS.filter(item =>
+  const visibleItems = ALL_NAV_ITEMS.filter(item =>
     allowedRoutes.includes(item.href)
   )
 
@@ -52,10 +56,10 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
   }
 
   const ROLE_LABELS: Record<UserRole, string> = {
-    admin:       'Administrador',
-    supervisor:  'Supervisor',
-    vendedor:    'Vendedor',
-    almacen:     'Almacén',
+    admin: 'Administrador',
+    supervisor: 'Supervisor',
+    vendedor: 'Vendedor',
+    almacen: 'Almacén',
     facturacion: 'Facturación',
   }
 
@@ -63,8 +67,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
     <aside
       className="relative flex flex-col h-screen transition-all duration-300 flex-shrink-0"
       style={{
-        width:       collapsed ? 64 : 220,
-        background:  '#031926',
+        width: collapsed ? 64 : 220,
+        background: '#031926',
         borderRight: '1px solid rgba(244,233,205,0.08)',
       }}
     >
@@ -76,7 +80,7 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
       >
         {collapsed
           ? <ChevronRight className="w-3 h-3" />
-          : <ChevronLeft  className="w-3 h-3" />
+          : <ChevronLeft className="w-3 h-3" />
         }
       </button>
 
@@ -104,7 +108,7 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-hidden">
         {visibleItems.map(item => {
-          const Icon   = item.icon
+          const Icon = item.icon
           const active = pathname === item.href
           return (
             <Link
@@ -113,8 +117,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150"
               style={{
                 background: active ? 'rgba(68,129,137,0.3)' : 'transparent',
-                border:     active ? '1px solid rgba(68,129,137,0.4)' : '1px solid transparent',
-                color:      active ? '#F4E9CD' : 'rgba(244,233,205,0.55)',
+                border: active ? '1px solid rgba(68,129,137,0.4)' : '1px solid transparent',
+                color: active ? '#F4E9CD' : 'rgba(244,233,205,0.55)',
               }}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />

@@ -18,6 +18,9 @@ import { Plus, Search, Pencil, PackageX } from 'lucide-react'
 import { Product } from '@/types'
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
+import { useCategories } from '@/lib/hooks/use-categories'
+import Link from 'next/link'
+import { Eye } from 'lucide-react'
 
 export default function ProductosPage() {
   const { data: products, isLoading } = useProducts()
@@ -25,6 +28,7 @@ export default function ProductosPage() {
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { data: categories } = useCategories()
 
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -176,6 +180,11 @@ export default function ProductosPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      <Link href={`/dashboard/productos/${product.id}`}>
+                        <Button size="sm" variant="ghost" style={{ color: '#468189' }}>
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
                       <Button
                         size="sm"
                         variant="ghost"

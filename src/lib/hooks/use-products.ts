@@ -13,15 +13,32 @@ export function useProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          product_categories (name)
-        `)
+        .select('*')
         .order('code', { ascending: true })
 
-      if (error) throw error
-      return data
+      if (error) {
+        console.error('useProducts error:', error)
+        throw error
+      }
+      return data as Product[]
     },
+  })
+}
+
+export function useProduct(id: string) {
+  return useQuery({
+    queryKey: ['product', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) throw error
+      return data as Product
+    },
+    enabled: !!id,
   })
 }
 
@@ -52,6 +69,14 @@ export function useUpdateProduct() {
 
   return useMutation({
     mutationFn: async ({ id, ...product }: Partial<Product> & { id: string }) => {
+      const rawCategory = (product as any).category_id
+      const categoryId = rawCategory &&
+        rawCategory !== 'false' &&
+        rawCategory !== 'true' &&
+        rawCategory !== 'none'
+        ? rawCategory
+        : null
+
       const { error } = await supabase.rpc('update_product', {
         p_id: id,
         p_code: product.code ?? '',
@@ -63,10 +88,13 @@ export function useUpdateProduct() {
         p_price_c: product.price_c ?? 0,
         p_stock: product.stock ?? 0,
         p_min_stock: product.min_stock ?? 0,
-        p_active: product.active ?? true,
+        p_active: product.active === undefined ? true : Boolean(product.active),
+        p_category_id: categoryId,
+        p_purchase_price: Number((product as any).purchase_price ?? 0),
       })
 
       if (error) throw error
+      console.log('p_active value:', product.active, 'type:', typeof product.active)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
