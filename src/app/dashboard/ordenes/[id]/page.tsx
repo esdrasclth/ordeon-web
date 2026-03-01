@@ -15,28 +15,31 @@ import { ArrowLeft, Loader2, MapPin, Phone, Hash } from 'lucide-react'
 import { OrderStatus } from '@/types'
 import { toast } from 'sonner'
 import { usePermissions } from '@/lib/hooks/use-current-user'
+import { useSettings } from '@/lib/hooks/use-settings'
+import { PdfDownloadButton } from '@/components/orders/pdf-download-button'
 
 const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus; label: string; color: string }>> = {
-  pendiente:      { status: 'en_preparacion', label: 'Iniciar Preparación',   color: '#2980b9' },
-  en_preparacion: { status: 'preparada',      label: 'Marcar como Preparada', color: '#27ae60' },
-  preparada:      { status: 'despachada',      label: 'Marcar como Despachada', color: '#16a085' },
-  despachada:     { status: 'facturada',       label: 'Registrar Factura',     color: '#468189' },
+  pendiente: { status: 'en_preparacion', label: 'Iniciar Preparación', color: '#2980b9' },
+  en_preparacion: { status: 'preparada', label: 'Marcar como Preparada', color: '#27ae60' },
+  preparada: { status: 'despachada', label: 'Marcar como Despachada', color: '#16a085' },
+  despachada: { status: 'facturada', label: 'Registrar Factura', color: '#468189' },
 }
 
 const fmt = (n: number) =>
   `L. ${Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
 export default function OrderDetailPage() {
-  const { id }   = useParams<{ id: string }>()
-  const router   = useRouter()
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { data: order, isLoading } = useOrder(id)
   const updateStatus = useUpdateOrderStatus()
   const { actions, role } = usePermissions()
+  const { data: settings } = useSettings()
 
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
-  const [statusNotes,     setStatusNotes]     = useState('')
-  const [invoiceNumber,   setInvoiceNumber]   = useState('')
+  const [statusNotes, setStatusNotes] = useState('')
+  const [invoiceNumber, setInvoiceNumber] = useState('')
 
   const nextAction = order ? NEXT_STATUS[order.status as OrderStatus] : null
 
@@ -45,9 +48,9 @@ export default function OrderDetailPage() {
     try {
       await updateStatus.mutateAsync({
         order_id: order.id,
-        status:   nextAction.status,
-        notes:    statusNotes || undefined,
-        invoice:  nextAction.status === 'facturada' ? invoiceNumber : undefined,
+        status: nextAction.status,
+        notes: statusNotes || undefined,
+        invoice: nextAction.status === 'facturada' ? invoiceNumber : undefined,
       })
       toast.success(`Orden actualizada a: ${STATUS_CONFIG[nextAction.status].label}`)
       setShowStatusModal(false)
@@ -63,8 +66,8 @@ export default function OrderDetailPage() {
     try {
       await updateStatus.mutateAsync({
         order_id: order.id,
-        status:   'cancelada',
-        notes:    statusNotes || 'Orden cancelada',
+        status: 'cancelada',
+        notes: statusNotes || 'Orden cancelada',
       })
       toast.success('Orden cancelada')
       setShowCancelModal(false)
@@ -114,20 +117,24 @@ export default function OrderDetailPage() {
 
         {/* Acciones */}
         <div className="flex gap-3">
+          {/* Botón PDF */}
+          {order && settings && (
+            <PdfDownloadButton order={order} settings={settings} />
+          )}
           {actions.canCancelOrder &&
             order.status !== 'cancelada' &&
             order.status !== 'facturada' && (
-            <Button
-              variant="outline"
-              onClick={() => setShowCancelModal(true)}
-              style={{ color: '#d94f4f', borderColor: '#d94f4f' }}
-            >
-              Cancelar Orden
-            </Button>
-          )}
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelModal(true)}
+                style={{ color: '#d94f4f', borderColor: '#d94f4f' }}
+              >
+                Cancelar Orden
+              </Button>
+            )}
           {nextAction && (() => {
             if (role === 'facturacion' && nextAction.status !== 'facturada') return null
-            if (role === 'almacen'     && nextAction.status === 'facturada') return null
+            if (role === 'almacen' && nextAction.status === 'facturada') return null
             if (role === 'vendedor') return null
             return (
               <Button onClick={() => setShowStatusModal(true)}
@@ -198,8 +205,8 @@ export default function OrderDetailPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 320, marginLeft: 'auto' }}>
                 {[
                   { label: 'Subtotal (sin ISV)', value: order.subtotal },
-                  { label: `ISV (15%)`,          value: order.isv_amount },
-                  { label: 'Descuentos',         value: order.discount_amount, green: true },
+                  { label: `ISV (15%)`, value: order.isv_amount },
+                  { label: 'Descuentos', value: order.discount_amount, green: true },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between">
                     <span className="text-sm" style={{ color: '#777' }}>{row.label}</span>
@@ -289,11 +296,12 @@ export default function OrderDetailPage() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { label: 'Vendedor',         value: order.profiles?.full_name },
+                { label: 'Vendedor', value: order.profiles?.full_name },
                 { label: 'Lista de precios', value: `Lista ${order.price_list}` },
                 { label: 'Términos de pago', value: order.payment_terms },
                 { label: 'Método de entrega', value: order.delivery_method },
-                { label: 'Fecha estimada',
+                {
+                  label: 'Fecha estimada',
                   value: order.delivery_date
                     ? new Date(order.delivery_date).toLocaleDateString('es-HN')
                     : '—'
