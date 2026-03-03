@@ -2,12 +2,14 @@ import { Badge } from '@/components/ui/badge'
 import { OrderStatus } from '@/types'
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string }> = {
-  pendiente:       { label: 'Pendiente',       color: '#fff', bg: '#e67e22' },
-  en_preparacion:  { label: 'En Preparación',  color: '#fff', bg: '#2980b9' },
-  preparada:       { label: 'Preparada',        color: '#fff', bg: '#27ae60' },
-  despachada:      { label: 'Despachada',       color: '#fff', bg: '#16a085' },
-  facturada:       { label: 'Facturada',        color: '#fff', bg: '#468189' },
-  cancelada:       { label: 'Cancelada',        color: '#fff', bg: '#d94f4f' },
+  pendiente:            { label: 'Pendiente',         color: '#fff',     bg: '#e67e22' },
+  en_preparacion:       { label: 'En Preparación',    color: '#fff',     bg: '#2980b9' },
+  preparada:            { label: 'Preparada',          color: '#fff',     bg: '#27ae60' },
+  despachada:           { label: 'Despachada',         color: '#fff',     bg: '#16a085' },
+  facturada:            { label: 'Facturada',          color: '#fff',     bg: '#468189' },
+  cancelada:            { label: 'Cancelada',          color: '#fff',     bg: '#d94f4f' },
+  pendiente_aprobacion: { label: 'Pend. Aprobación',  color: '#92400e',  bg: '#fef3c7' },
+  rechazada:            { label: 'Rechazada',          color: '#fff',     bg: '#7f1d1d' },
 }
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {

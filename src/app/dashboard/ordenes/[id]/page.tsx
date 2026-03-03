@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useOrder, useUpdateOrderStatus } from '@/lib/hooks/use-orders'
 import { OrderStatusBadge, STATUS_CONFIG } from '@/components/orders/order-status-badge'
@@ -11,10 +11,10 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog'
-import { ArrowLeft, Loader2, MapPin, Phone, Hash } from 'lucide-react'
+import { ArrowLeft, Loader2, MapPin, Phone, Hash, AlertCircle } from 'lucide-react'
 import { OrderStatus } from '@/types'
 import { toast } from 'sonner'
-import { usePermissions } from '@/lib/hooks/use-current-user'
+import { usePermissions, useCurrentUser } from '@/lib/hooks/use-current-user'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { PdfDownloadButton } from '@/components/orders/pdf-download-button'
 
@@ -40,6 +40,38 @@ export default function OrderDetailPage() {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [statusNotes, setStatusNotes] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [showApprovalModal, setShowApprovalModal] = useState(false)
+  const [approvalAction, setApprovalAction] = useState<'aprobar' | 'rechazar'>('aprobar')
+
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser()
+
+  if (isLoading || userLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#468189' }} />
+      </div>
+    )
+  }
+
+  if (!order) {
+    return (
+      <div className="text-center py-20" style={{ color: '#9DBEBB' }}>
+        <p>Orden no encontrada</p>
+      </div>
+    )
+  }
+
+  // ← Agregar aquí, después de tener order y user cargados
+  const userRole = currentUser?.role ?? 'vendedor'
+  if (
+    order.status === 'pendiente_aprobacion' &&
+    userRole !== 'admin' &&
+    userRole !== 'supervisor' &&
+    userRole !== 'vendedor'
+  ) {
+    router.replace('/dashboard/ordenes')
+    return null
+  }
 
   const nextAction = order ? NEXT_STATUS[order.status as OrderStatus] : null
 
@@ -76,6 +108,22 @@ export default function OrderDetailPage() {
     }
   }
 
+  const handleApproval = async (action: 'aprobar' | 'rechazar') => {
+    if (!order) return
+    try {
+      await updateStatus.mutateAsync({
+        order_id: order.id,
+        status: action === 'aprobar' ? 'pendiente' : 'rechazada',
+        notes: statusNotes || (action === 'aprobar' ? 'Orden aprobada' : 'Orden rechazada'),
+      })
+      toast.success(action === 'aprobar' ? 'Orden aprobada' : 'Orden rechazada')
+      setShowApprovalModal(false)
+      setStatusNotes('')
+    } catch {
+      toast.error('Error al procesar la aprobación')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -91,6 +139,10 @@ export default function OrderDetailPage() {
       </div>
     )
   }
+
+  console.log('currentUser:', currentUser)
+  console.log('userLoading:', userLoading)
+  console.log('order.status:', order?.status)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -145,6 +197,44 @@ export default function OrderDetailPage() {
           })()}
         </div>
       </div>
+
+      {/* Banner pendiente aprobación */}
+      {order.status === 'pendiente_aprobacion' && (
+        <div className="rounded-xl p-4 flex items-center justify-between"
+          style={{ background: '#fffbeb', border: '2px solid #fcd34d' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: '#fef3c7' }}>
+              <AlertCircle className="w-5 h-5" style={{ color: '#d97706' }} />
+            </div>
+            <div>
+              <p className="font-bold text-sm" style={{ color: '#92400e' }}>
+                Orden pendiente de aprobación
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+                Esta orden excede el límite de crédito del cliente y requiere autorización.
+              </p>
+            </div>
+          </div>
+          {(role === 'admin' || role === 'supervisor') && (
+            <div className="flex gap-2 ml-4">
+              <Button
+                onClick={() => { setApprovalAction('rechazar'); setShowApprovalModal(true) }}
+                variant="outline"
+                style={{ color: '#d94f4f', borderColor: '#d94f4f' }}
+              >
+                Rechazar
+              </Button>
+              <Button
+                onClick={() => { setApprovalAction('aprobar'); setShowApprovalModal(true) }}
+                style={{ background: '#27ae60', color: '#fff' }}
+              >
+                Aprobar
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cuerpo */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>
@@ -422,6 +512,56 @@ export default function OrderDetailPage() {
               >
                 {updateStatus.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Cancelar Orden
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal aprobación */}
+      <Dialog open={showApprovalModal} onOpenChange={setShowApprovalModal}>
+        <DialogContent className="max-w-sm" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle style={{
+              color: approvalAction === 'aprobar' ? '#27ae60' : '#d94f4f',
+              fontFamily: 'Georgia, serif'
+            }}>
+              {approvalAction === 'aprobar' ? 'Aprobar Orden' : 'Rechazar Orden'}
+            </DialogTitle>
+          </DialogHeader>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
+            <p className="text-sm" style={{ color: '#555' }}>
+              {approvalAction === 'aprobar'
+                ? 'La orden pasará a estado Pendiente y continuará su flujo normal.'
+                : 'La orden será rechazada y el stock reservado será liberado.'
+              }
+            </p>
+            <div>
+              <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
+                Notas (opcional)
+              </Label>
+              <Textarea
+                value={statusNotes}
+                onChange={e => setStatusNotes(e.target.value)}
+                placeholder="Motivo de la decisión..."
+                className="mt-1.5 resize-none"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-1">
+              <Button variant="outline" onClick={() => setShowApprovalModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => handleApproval(approvalAction)}
+                disabled={updateStatus.isPending}
+                style={{
+                  background: approvalAction === 'aprobar' ? '#27ae60' : '#d94f4f',
+                  color: '#fff'
+                }}
+              >
+                {updateStatus.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {approvalAction === 'aprobar' ? 'Confirmar Aprobación' : 'Confirmar Rechazo'}
               </Button>
             </div>
           </div>

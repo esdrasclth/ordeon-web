@@ -154,6 +154,8 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
 
   const handleSubmit = async () => {
     if (!clientId || items.length === 0) return
+    console.log('overCredit:', overCredit)
+    console.log('force_status:', overCredit ? 'pendiente_aprobacion' : undefined)
     await onSubmit({
       client_id: clientId,
       vendor_id: vendorId,
@@ -165,6 +167,7 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
       notes,
       isv_rate: isvRate,
       items,
+      force_status: overCredit ? 'pendiente_aprobacion' : undefined,
     })
   }
 

@@ -19,12 +19,14 @@ import { useCurrentUser, usePermissions } from '@/lib/hooks/use-current-user'
 
 const TABS: { value: string; label: string }[] = [
   { value: 'todos', label: 'Todos' },
+  { value: 'pendiente_aprobacion', label: 'Pend. Aprobación' },
   { value: 'pendiente', label: 'Pendientes' },
   { value: 'en_preparacion', label: 'En Preparación' },
   { value: 'preparada', label: 'Preparadas' },
   { value: 'despachada', label: 'Despachadas' },
   { value: 'facturada', label: 'Facturadas' },
   { value: 'cancelada', label: 'Canceladas' },
+  { value: 'rechazada', label: 'Rechazadas' },
 ]
 
 function OrderCard({ order }: { order: SalesOrder }) {
@@ -122,7 +124,7 @@ export default function OrdenesPage() {
   const router = useRouter()
 
   const { data: currentUser } = useCurrentUser()
-  const { actions, isVendedor } = usePermissions()
+  const { actions, isVendedor, role } = usePermissions()
 
   // Si es vendedor, filtrar solo sus órdenes
   const vendorFilter = isVendedor ? currentUser?.id : undefined
@@ -168,31 +170,42 @@ export default function OrdenesPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8 overflow-x-auto pb-1 pt-2">
-        {TABS.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all"
-            style={{
-              background: activeTab === tab.value ? '#468189' : '#fff',
-              color:      activeTab === tab.value ? '#F4E9CD' : '#777',
-              border:     `1px solid ${activeTab === tab.value ? '#468189' : '#ddd'}`,
-            }}
-          >
-            {tab.label}
-            {counts[tab.value] > 0 && (
-              <span
-                className="text-xs px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: activeTab === tab.value ? 'rgba(244,233,205,0.3)' : '#f0f0f0',
-                  color:      activeTab === tab.value ? '#F4E9CD' : '#888',
-                }}
-              >
-                {counts[tab.value]}
-              </span>
-            )}
-          </button>
-        ))}
+        {TABS
+          .filter(tab => {
+            if (
+              (tab.value === 'pendiente_aprobacion' || tab.value === 'rechazada') &&
+              (role === 'almacen' || role === 'facturacion')
+            ) return false
+            return true
+          })
+          .map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all"
+              style={{
+                background: activeTab === tab.value ? '#468189' : '#fff',
+                color: activeTab === tab.value ? '#F4E9CD' : '#777',
+                border: `1px solid ${activeTab === tab.value ? '#468189' : '#ddd'}`,
+              }}
+            >
+              {tab.label}
+              {counts[tab.value] > 0 && (
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded-full"
+                  style={{
+                    background: activeTab === tab.value ? 'rgba(244,233,205,0.3)' :
+                      tab.value === 'pendiente_aprobacion' ? '#fef3c7' : '#f0f0f0',
+                    color: activeTab === tab.value ? '#F4E9CD' :
+                      tab.value === 'pendiente_aprobacion' ? '#d97706' : '#888',
+                  }}
+                >
+                  {counts[tab.value]}
+                </span>
+              )}
+            </button>
+          ))
+        }
       </div>
 
       {/* Grid */}

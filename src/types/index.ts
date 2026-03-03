@@ -57,11 +57,13 @@ export interface Client {
 
 export type OrderStatus =
   | 'pendiente'
+  | 'pendiente_aprobacion'
   | 'en_preparacion'
   | 'preparada'
   | 'despachada'
   | 'facturada'
   | 'cancelada'
+  | 'rechazada'
 
 export interface SalesOrder {
   id: string
