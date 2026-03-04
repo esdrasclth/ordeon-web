@@ -12,12 +12,22 @@ import { toast } from 'sonner'
 export default function NuevaOrdenPage() {
   const router = useRouter()
   const createOrder = useCreateOrder()
-  const [vendorId, setVendorId] = useState<string | null>(null)
+  const [vendorId,  setVendorId]  = useState<string | null>(null)
+  const [userRole,  setUserRole]  = useState<string>('vendedor')
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setVendorId(data.user.id)
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      setVendorId(data.user.id)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profile) setUserRole(profile.role)
     })
   }, [])
 
@@ -59,6 +69,7 @@ export default function NuevaOrdenPage() {
       {vendorId && (
         <OrderForm
           vendorId={vendorId}
+          userRole={userRole}
           onSubmit={handleCreate}
           onCancel={() => router.back()}
           loading={createOrder.isPending}

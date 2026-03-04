@@ -67,11 +67,9 @@ export default function ProductDetailPage() {
       setAdjustQty('')
       setAdjustNotes('')
     } catch (e: any) {
-      toast.error(e.message?.includes('insuficiente')
-        ? 'Stock insuficiente para esa salida'
-        : 'Error al ajustar stock'
-      )
-    }
+  console.error('Error ajuste stock:', e)
+  toast.error(e.message ?? 'Error al ajustar stock')
+}
   }
 
   if (productLoading) {

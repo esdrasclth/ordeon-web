@@ -2,17 +2,11 @@
 
 import { useState } from 'react'
 import { useOrders } from '@/lib/hooks/use-orders'
-import { OrderForm } from '@/components/orders/order-form'
-import { OrderStatusBadge, STATUS_CONFIG } from '@/components/orders/order-status-badge'
+import { OrderStatusBadge } from '@/components/orders/order-status-badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle
-} from '@/components/ui/dialog'
-import { Plus, ShoppingCart, Eye } from 'lucide-react'
-import { OrderStatus, SalesOrder } from '@/types'
-import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
-import { useEffect, useState as useStateR } from 'react'
+import { Input } from '@/components/ui/input'
+import { Plus, ShoppingCart, Eye, Search } from 'lucide-react'
+import { SalesOrder } from '@/types'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCurrentUser, usePermissions } from '@/lib/hooks/use-current-user'
@@ -42,7 +36,6 @@ function OrderCard({ order }: { order: SalesOrder }) {
       className="rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
       style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.12)' }}
     >
-      {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2">
@@ -62,29 +55,20 @@ function OrderCard({ order }: { order: SalesOrder }) {
         </Link>
       </div>
 
-      {/* Info */}
       <div className="space-y-1 mb-4">
         <p className="text-xs" style={{ color: '#777' }}>
           👤 {order.profiles?.full_name ?? '—'}
         </p>
-        <p className="text-xs" style={{ color: '#777' }}>
-          📅 {date}
-        </p>
+        <p className="text-xs" style={{ color: '#777' }}>📅 {date}</p>
         {order.delivery_date && (
           <p className="text-xs" style={{ color: '#777' }}>
             🚚 Entrega: {new Date(order.delivery_date).toLocaleDateString('es-HN')}
           </p>
         )}
-        <p className="text-xs" style={{ color: '#777' }}>
-          💳 {order.payment_terms}
-        </p>
+        <p className="text-xs" style={{ color: '#777' }}>💳 {order.payment_terms}</p>
       </div>
 
-      {/* Totales */}
-      <div
-        className="rounded-lg p-3 space-y-1"
-        style={{ background: '#f8fafa' }}
-      >
+      <div className="rounded-lg p-3 space-y-1" style={{ background: '#f8fafa' }}>
         <div className="flex justify-between text-xs">
           <span style={{ color: '#9DBEBB' }}>Subtotal sin ISV</span>
           <span style={{ color: '#555' }}>{fmt(Number(order.subtotal))}</span>
@@ -99,10 +83,7 @@ function OrderCard({ order }: { order: SalesOrder }) {
             <span style={{ color: '#27ae60' }}>-{fmt(Number(order.discount_amount))}</span>
           </div>
         )}
-        <div
-          className="flex justify-between pt-1"
-          style={{ borderTop: '1px solid #eee' }}
-        >
+        <div className="flex justify-between pt-1" style={{ borderTop: '1px solid #eee' }}>
           <span className="text-sm font-bold" style={{ color: '#031926' }}>Total</span>
           <span className="text-sm font-bold" style={{ color: '#468189' }}>
             {fmt(Number(order.total))}
@@ -121,21 +102,29 @@ function OrderCard({ order }: { order: SalesOrder }) {
 
 export default function OrdenesPage() {
   const [activeTab, setActiveTab] = useState('todos')
+  const [search, setSearch] = useState('')
   const router = useRouter()
 
   const { data: currentUser } = useCurrentUser()
   const { actions, isVendedor, role } = usePermissions()
 
-  // Si es vendedor, filtrar solo sus órdenes
   const vendorFilter = isVendedor ? currentUser?.id : undefined
   const { data: orders, isLoading } = useOrders(activeTab, vendorFilter)
 
+  const filteredOrders = (orders ?? []).filter(o => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase().trim()
+    return (
+      String(o.order_number).padStart(5, '0').includes(q) ||
+      o.clients?.name?.toLowerCase().includes(q) ||
+      o.profiles?.full_name?.toLowerCase().includes(q)
+    )
+  })
+
   const counts = TABS.reduce((acc, tab) => {
-    if (tab.value === 'todos') {
-      acc[tab.value] = orders?.length ?? 0
-    } else {
-      acc[tab.value] = orders?.filter(o => o.status === tab.value).length ?? 0
-    }
+    acc[tab.value] = tab.value === 'todos'
+      ? (orders?.length ?? 0)
+      : (orders?.filter(o => o.status === tab.value).length ?? 0)
     return acc
   }, {} as Record<string, number>)
 
@@ -144,17 +133,12 @@ export default function OrdenesPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1
-            className="text-3xl font-bold"
-            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}
-          >
+          <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
             Órdenes de Venta
           </h1>
           <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            {orders?.length ?? 0} órdenes encontradas
-            {isVendedor && (
-              <span className="ml-1" style={{ color: '#9DBEBB' }}>· solo tus órdenes</span>
-            )}
+            {filteredOrders.length} órdenes encontradas
+            {isVendedor && <span className="ml-1" style={{ color: '#9DBEBB' }}>· solo tus órdenes</span>}
           </p>
         </div>
         {actions.canCreateOrder && (
@@ -169,7 +153,7 @@ export default function OrdenesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-1 pt-2">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 pt-2">
         {TABS
           .filter(tab => {
             if (
@@ -208,6 +192,26 @@ export default function OrdenesPage() {
         }
       </div>
 
+      {/* Buscador */}
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9DBEBB' }} />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar por número de orden, cliente o vendedor..."
+          className="pl-10 h-10"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xl leading-none"
+            style={{ color: '#9DBEBB' }}
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -215,17 +219,19 @@ export default function OrdenesPage() {
             <div key={i} className="h-64 rounded-xl animate-pulse" style={{ background: '#e8efee' }} />
           ))}
         </div>
-      ) : orders?.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div className="text-center py-20" style={{ color: '#9DBEBB' }}>
           <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No hay órdenes en este estado</p>
-          {actions.canCreateOrder && (
+          <p className="font-medium">
+            {search ? `Sin resultados para "${search}"` : 'No hay órdenes en este estado'}
+          </p>
+          {actions.canCreateOrder && !search && (
             <p className="text-sm mt-1">Crea una nueva orden para comenzar</p>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {orders?.map(order => (
+          {filteredOrders.map(order => (
             <OrderCard key={order.id} order={order} />
           ))}
         </div>

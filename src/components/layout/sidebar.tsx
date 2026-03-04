@@ -13,16 +13,18 @@ import { UserRole } from '@/types'
 import { ROLE_ROUTES } from '@/lib/permissions'
 import { ArrowLeftRight } from 'lucide-react'
 import { Boxes } from 'lucide-react'
+import { useNotifications } from '@/lib/hooks/use-notifications'
+import { NotificationsPanel } from '@/components/layout/notifications-panel'
 
 const ALL_NAV_ITEMS = [
-  { href: '/dashboard',              label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/dashboard/ordenes',      label: 'Órdenes',      icon: ShoppingCart    },
-  { href: '/dashboard/inventario',   label: 'Inventario',   icon: Boxes           },
-  { href: '/dashboard/movimientos',  label: 'Movimientos',  icon: ArrowLeftRight  },
-  { href: '/dashboard/productos',    label: 'Productos',    icon: Package2        },
-  { href: '/dashboard/clientes',     label: 'Clientes',     icon: Users           },
-  { href: '/dashboard/usuarios',     label: 'Usuarios',     icon: UserCog         },
-  { href: '/dashboard/configuracion',label: 'Configuración',icon: Settings        },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/ordenes', label: 'Órdenes', icon: ShoppingCart },
+  { href: '/dashboard/inventario', label: 'Inventario', icon: Boxes },
+  { href: '/dashboard/movimientos', label: 'Movimientos', icon: ArrowLeftRight },
+  { href: '/dashboard/productos', label: 'Productos', icon: Package2 },
+  { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
+  { href: '/dashboard/usuarios', label: 'Usuarios', icon: UserCog },
+  { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 interface SidebarProps {
@@ -35,6 +37,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
   const router = useRouter()
   const supabase = createClient()
   const [collapsed, setCollapsed] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const { notifications, unreadCount, markAllRead, clearAll } = useNotifications(userRole)
 
   const initials = userName
     .split(' ')
@@ -155,6 +159,19 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
             </div>
           )}
         </div>
+
+        {/* Notificaciones */}
+        <NotificationsPanel
+          notifications={notifications}
+          unreadCount={unreadCount}
+          open={notifOpen}
+          onOpen={() => setNotifOpen(true)}
+          onClose={() => setNotifOpen(false)}
+          onMarkAllRead={markAllRead}
+          onClearAll={clearAll}
+          collapsed={collapsed}
+        />
+
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-all text-sm"

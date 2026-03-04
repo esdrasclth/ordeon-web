@@ -18,12 +18,13 @@ import { toast } from 'sonner'
 
 interface OrderFormProps {
   vendorId: string
+  userRole: string
   onSubmit: (data: any) => Promise<void>
   onCancel: () => void
   loading?: boolean
 }
 
-export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormProps) {
+export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: OrderFormProps) {
   const { data: products } = useProducts()
   const { data: clients } = useClients()
   const { data: settings } = useSettings()
@@ -41,6 +42,11 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
   const [showProducts, setShowProducts] = useState(false)
 
   const isvRate = Number(settings?.isv_rate ?? 15)
+
+  // Límite de descuento según rol
+  const maxDiscount = userRole === 'supervisor' || userRole === 'admin'
+    ? Number(settings?.max_discount_supervisor ?? 20)
+    : Number(settings?.max_discount_vendor ?? 10)
 
   // Cuando cambia el cliente, actualizar término de pago por defecto
   useEffect(() => {
@@ -111,6 +117,15 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
         return
       }
     }
+
+    // ← agrega esto
+    if (field === 'discount_pct') {
+      if (value > maxDiscount) {
+        toast.error(`Tu rol permite un descuento máximo de ${maxDiscount}%`)
+        return
+      }
+    }
+
     setItems(prev => prev.map(i =>
       i.product_id === productId ? { ...i, [field]: value } : i
     ))
@@ -408,11 +423,13 @@ export function OrderForm({ vendorId, onSubmit, onCancel, loading }: OrderFormPr
                       />
                     </div>
                     <div>
-                      <p className="text-xs mb-1" style={{ color: '#9DBEBB' }}>Descuento %</p>
+                      <p className="text-xs mb-1" style={{ color: '#9DBEBB' }}>
+                        Descuento % <span style={{ color: '#468189' }}>(máx. {maxDiscount}%)</span>
+                      </p>
                       <Input
                         type="number"
                         min="0"
-                        max="100"
+                        max={maxDiscount}
                         value={item.discount_pct}
                         onChange={e => updateItem(item.product_id, 'discount_pct', Number(e.target.value))}
                         className="h-8 text-sm text-center px-1"

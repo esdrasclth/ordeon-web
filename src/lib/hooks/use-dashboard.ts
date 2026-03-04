@@ -112,3 +112,36 @@ export function useOrdersByStatus() {
     },
   })
 }
+
+export function useLowStockProducts() {
+  return useQuery({
+    queryKey: ['low-stock'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, code, stock, min_stock, unit')
+        .eq('active', true)
+        .order('stock', { ascending: true })
+        .limit(50)
+      if (error) throw error
+      return (data ?? []).filter(p => Number(p.stock) <= Number(p.min_stock)).slice(0, 6)
+    },
+  })
+}
+
+export function useOverCreditClients() {
+  return useQuery({
+    queryKey: ['over-credit-clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, city, current_balance, credit_limit')
+        .eq('status', 'active')
+        .gt('credit_limit', 0)
+        .order('current_balance', { ascending: false })
+        .limit(50)
+      if (error) throw error
+      return (data ?? []).filter(c => Number(c.current_balance) > Number(c.credit_limit)).slice(0, 6)
+    },
+  })
+}
