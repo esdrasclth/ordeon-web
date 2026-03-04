@@ -91,14 +91,14 @@ export function UserForm({ user, onSubmit, onCancel, loading }: UserFormProps) {
               Correo electrónico <span style={{ color: '#468189' }}>*</span>
             </Label>
             <Input {...register('email')} type="email" placeholder="correo@empresa.com" className="mt-1 h-10" />
-            <FieldError msg={errors.email?.message as string} />
+            <FieldError msg={ (errors as any).email?.message as string } />
           </div>
           <div>
             <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
               Contraseña temporal <span style={{ color: '#468189' }}>*</span>
             </Label>
             <Input {...register('password')} type="password" placeholder="Mínimo 6 caracteres" className="mt-1 h-10" />
-            <FieldError msg={errors.password?.message as string} />
+            <FieldError msg={(errors as any).password?.message as string} />
           </div>
         </>
       )}
