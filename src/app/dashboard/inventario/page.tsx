@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useProducts } from '@/lib/hooks/use-products'
 import {
     useInventoryOverview,
@@ -11,28 +11,26 @@ import { useSettings } from '@/lib/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-    Select, SelectContent, SelectItem,
-    SelectTrigger, SelectValue
-} from '@/components/ui/select'
-import {
     Boxes, TrendingUp, AlertTriangle, XCircle,
-    Search, FileDown, Loader2, RotateCcw
+    Search, FileDown, Loader2, ChevronDown, ChevronUp
 } from 'lucide-react'
 
 const fmt = (n: number) =>
     `L. ${Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
 const STATUS_CONFIG = {
-    normal: { label: 'Normal', color: '#27ae60', bg: '#27ae6015' },
+    normal:     { label: 'Normal',     color: '#27ae60', bg: '#27ae6015' },
     stock_bajo: { label: 'Stock Bajo', color: '#e67e22', bg: '#e67e2215' },
-    sin_stock: { label: 'Sin Stock', color: '#d94f4f', bg: '#d94f4f15' },
+    sin_stock:  { label: 'Sin Stock',  color: '#d94f4f', bg: '#d94f4f15' },
 }
 
 const ROTATION_CONFIG = {
-    normal: { label: 'Normal', color: '#27ae60' },
-    baja: { label: 'Baja', color: '#e67e22' },
+    normal:       { label: 'Normal',       color: '#27ae60' },
+    baja:         { label: 'Baja',         color: '#e67e22' },
     sin_rotacion: { label: 'Sin rotación', color: '#d94f4f' },
 }
+
+const PAGE_SIZE = 50
 
 export default function InventarioPage() {
     const { data: products, isLoading: productsLoading } = useProducts()
@@ -41,21 +39,13 @@ export default function InventarioPage() {
     const { data: rotation, isLoading: rotationLoading } = useProductRotation(90)
     const { data: settings } = useSettings()
 
-    const [search, setSearch] = useState('')
+    const [search,       setSearch]       = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
-    const [activeTab, setActiveTab] = useState<'stock' | 'rotacion'>('stock')
-    const [PdfLink, setPdfLink] = useState<any>(null)
-    const [InventPDF, setInventPDF] = useState<any>(null)
-
-    useEffect(() => {
-        Promise.all([
-            import('@react-pdf/renderer'),
-            import('@/components/inventory/inventory-pdf'),
-        ]).then(([pdf, { InventoryPDF }]) => {
-            setPdfLink(() => pdf.PDFDownloadLink)
-            setInventPDF(() => InventoryPDF)
-        })
-    }, [])
+    const [activeTab,    setActiveTab]    = useState<'stock' | 'rotacion'>('stock')
+    const [alertasOpen,  setAlertasOpen]  = useState(false)
+    const [page,         setPage]         = useState(1)
+    const [PdfLink,      setPdfLink]      = useState<any>(null)
+    const [InventPDF,    setInventPDF]    = useState<any>(null)
 
     const getStatus = (p: any) => {
         if (p.stock <= 0) return 'sin_stock'
@@ -63,16 +53,26 @@ export default function InventarioPage() {
         return 'normal'
     }
 
-    const filtered = products?.filter(p => {
+    const filtered = useMemo(() => products?.filter(p => {
         if (!p.active) return false
         const matchSearch = search === '' ||
             p.name.toLowerCase().includes(search.toLowerCase()) ||
             p.code.toLowerCase().includes(search.toLowerCase())
         const matchStatus = statusFilter === 'all' || getStatus(p) === statusFilter
         return matchSearch && matchStatus
-    }) ?? []
+    }) ?? [], [products, search, statusFilter])
 
-    const alertas = products?.filter(p => p.active && p.stock <= p.min_stock) ?? []
+    // Reset página al filtrar
+    const handleSearch = (v: string) => { setSearch(v); setPage(1) }
+    const handleFilter = (v: string) => { setStatusFilter(v); setPage(1) }
+
+    // Paginación
+    const totalPages  = Math.ceil(filtered.length / PAGE_SIZE)
+    const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+    const alertas     = products?.filter(p => p.active && p.stock <= p.min_stock) ?? []
+    const alertasSinStock  = alertas.filter(p => p.stock <= 0)
+    const alertasStockBajo = alertas.filter(p => p.stock > 0)
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -110,36 +110,11 @@ export default function InventarioPage() {
             {/* KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
                 {[
-                    {
-                        label: 'Valor Total',
-                        value: overviewLoading ? '...' : fmt(overview?.valor_total ?? 0),
-                        icon: <TrendingUp className="w-5 h-5" />,
-                        color: '#468189',
-                    },
-                    {
-                        label: 'Total Productos',
-                        value: overviewLoading ? '...' : String(overview?.total_productos ?? 0),
-                        icon: <Boxes className="w-5 h-5" />,
-                        color: '#031926',
-                    },
-                    {
-                        label: 'Stock Normal',
-                        value: overviewLoading ? '...' : String(overview?.stock_normal ?? 0),
-                        icon: <Boxes className="w-5 h-5" />,
-                        color: '#27ae60',
-                    },
-                    {
-                        label: 'Stock Bajo',
-                        value: overviewLoading ? '...' : String(overview?.stock_bajo ?? 0),
-                        icon: <AlertTriangle className="w-5 h-5" />,
-                        color: '#e67e22',
-                    },
-                    {
-                        label: 'Sin Stock',
-                        value: overviewLoading ? '...' : String(overview?.sin_stock ?? 0),
-                        icon: <XCircle className="w-5 h-5" />,
-                        color: '#d94f4f',
-                    },
+                    { label: 'Valor Total',      value: overviewLoading ? '...' : fmt(overview?.valor_total ?? 0),        icon: <TrendingUp className="w-5 h-5" />, color: '#468189' },
+                    { label: 'Total Productos',  value: overviewLoading ? '...' : String(overview?.total_productos ?? 0), icon: <Boxes className="w-5 h-5" />,      color: '#031926' },
+                    { label: 'Stock Normal',     value: overviewLoading ? '...' : String(overview?.stock_normal ?? 0),    icon: <Boxes className="w-5 h-5" />,      color: '#27ae60' },
+                    { label: 'Stock Bajo',       value: overviewLoading ? '...' : String(overview?.stock_bajo ?? 0),      icon: <AlertTriangle className="w-5 h-5" />, color: '#e67e22' },
+                    { label: 'Sin Stock',        value: overviewLoading ? '...' : String(overview?.sin_stock ?? 0),       icon: <XCircle className="w-5 h-5" />,    color: '#d94f4f' },
                 ].map(kpi => (
                     <div key={kpi.label} className="rounded-xl p-5 shadow-sm"
                         style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.12)' }}>
@@ -162,31 +137,81 @@ export default function InventarioPage() {
                 ))}
             </div>
 
-            {/* Alertas de stock bajo */}
+            {/* Alertas — colapsable y en tabla */}
             {alertas.length > 0 && (
-                <div className="rounded-xl p-4"
-                    style={{ background: '#fff8f0', border: '1px solid rgba(230,126,34,0.3)' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="w-4 h-4" style={{ color: '#e67e22' }} />
-                        <p className="text-sm font-bold" style={{ color: '#e67e22' }}>
-                            {alertas.length} producto(s) requieren reabastecimiento
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {alertas.map(p => (
-                            <span key={p.id} className="text-xs px-3 py-1.5 rounded-full font-semibold"
-                                style={{
-                                    background: p.stock <= 0 ? '#d94f4f15' : '#e67e2215',
-                                    color: p.stock <= 0 ? '#d94f4f' : '#e67e22',
-                                    border: `1px solid ${p.stock <= 0 ? '#d94f4f40' : '#e67e2240'}`,
-                                }}>
-                                {p.code} — {p.name}
-                                <span className="ml-1.5 opacity-70">
-                                    ({p.stock <= 0 ? 'Sin stock' : `${p.stock} ${p.unit}`})
-                                </span>
+                <div className="rounded-xl overflow-hidden"
+                    style={{ border: '1px solid rgba(230,126,34,0.3)' }}>
+                    <button
+                        onClick={() => setAlertasOpen(v => !v)}
+                        className="w-full flex items-center justify-between px-5 py-4 transition-colors hover:opacity-90"
+                        style={{ background: '#fff8f0' }}
+                    >
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" style={{ color: '#e67e22' }} />
+                            <span className="text-sm font-bold" style={{ color: '#e67e22' }}>
+                                {alertas.length} producto(s) requieren reabastecimiento
                             </span>
-                        ))}
-                    </div>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                style={{ background: '#d94f4f15', color: '#d94f4f' }}>
+                                {alertasSinStock.length} sin stock
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                style={{ background: '#e67e2215', color: '#e67e22' }}>
+                                {alertasStockBajo.length} stock bajo
+                            </span>
+                        </div>
+                        {alertasOpen
+                            ? <ChevronUp className="w-4 h-4" style={{ color: '#e67e22' }} />
+                            : <ChevronDown className="w-4 h-4" style={{ color: '#e67e22' }} />
+                        }
+                    </button>
+
+                    {alertasOpen && (
+                        <div style={{ background: '#fff' }}>
+                            <table className="w-full">
+                                <thead>
+                                    <tr style={{ background: '#f8fafa', borderBottom: '1px solid #eee' }}>
+                                        {['Estado', 'Código', 'Producto', 'Unidad', 'Stock actual', 'Mínimo'].map(h => (
+                                            <th key={h} className="px-4 py-2.5 text-left"
+                                                style={{ fontSize: 11, color: '#9DBEBB', fontWeight: 700 }}>
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {alertas.map((p, i) => (
+                                        <tr key={p.id}
+                                            style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f5f5f5' }}>
+                                            <td className="px-4 py-2.5">
+                                                <span className="text-xs font-bold px-2 py-1 rounded-full"
+                                                    style={{
+                                                        background: p.stock <= 0 ? '#d94f4f15' : '#e67e2215',
+                                                        color:      p.stock <= 0 ? '#d94f4f'   : '#e67e22',
+                                                    }}>
+                                                    {p.stock <= 0 ? 'Sin stock' : 'Stock bajo'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-2.5 text-xs font-mono font-bold" style={{ color: '#468189' }}>
+                                                {p.code}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-sm font-medium" style={{ color: '#031926' }}>
+                                                {p.name}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-xs" style={{ color: '#777' }}>{p.unit}</td>
+                                            <td className="px-4 py-2.5 text-sm font-bold text-center"
+                                                style={{ color: p.stock <= 0 ? '#d94f4f' : '#e67e22' }}>
+                                                {Number(p.stock).toLocaleString('es-HN')}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-sm text-center" style={{ color: '#777' }}>
+                                                {Number(p.min_stock).toLocaleString('es-HN')}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -199,7 +224,7 @@ export default function InventarioPage() {
                             Valoración por Categoría
                         </h3>
                     </div>
-                    <div className="p-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr)', gap: 12 }}>
+                    <div className="p-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
                         {byCategory.map(cat => {
                             const pct = overview?.valor_total
                                 ? (cat.valor_total / overview.valor_total) * 100
@@ -231,11 +256,11 @@ export default function InventarioPage() {
                 </div>
             )}
 
-            {/* Tabs: Stock / Rotación */}
+            {/* Tabs */}
             <div>
                 <div className="flex gap-2 mb-4">
                     {[
-                        { key: 'stock', label: 'Vista de Stock' },
+                        { key: 'stock',    label: 'Vista de Stock'        },
                         { key: 'rotacion', label: 'Rotación de Productos' },
                     ].map(tab => (
                         <button key={tab.key}
@@ -243,8 +268,8 @@ export default function InventarioPage() {
                             className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
                             style={{
                                 background: activeTab === tab.key ? '#468189' : '#fff',
-                                color: activeTab === tab.key ? '#F4E9CD' : '#777',
-                                border: `1px solid ${activeTab === tab.key ? '#468189' : '#ddd'}`,
+                                color:      activeTab === tab.key ? '#F4E9CD' : '#777',
+                                border:     `1px solid ${activeTab === tab.key ? '#468189' : '#ddd'}`,
                             }}>
                             {tab.label}
                         </button>
@@ -261,24 +286,24 @@ export default function InventarioPage() {
                                     style={{ color: '#9DBEBB' }} />
                                 <Input
                                     value={search}
-                                    onChange={e => setSearch(e.target.value)}
+                                    onChange={e => handleSearch(e.target.value)}
                                     placeholder="Buscar por nombre o código..."
                                     className="pl-10 h-10"
                                 />
                             </div>
                             <div className="flex gap-2">
                                 {[
-                                    { value: 'all', label: 'Todos' },
-                                    { value: 'normal', label: 'Normal' },
+                                    { value: 'all',        label: 'Todos'      },
+                                    { value: 'normal',     label: 'Normal'     },
                                     { value: 'stock_bajo', label: 'Stock Bajo' },
-                                    { value: 'sin_stock', label: 'Sin Stock' },
+                                    { value: 'sin_stock',  label: 'Sin Stock'  },
                                 ].map(f => (
-                                    <button key={f.value} onClick={() => setStatusFilter(f.value)}
+                                    <button key={f.value} onClick={() => handleFilter(f.value)}
                                         className="px-3 py-2 rounded-lg text-xs font-semibold transition-all"
                                         style={{
                                             background: statusFilter === f.value ? '#468189' : '#fff',
-                                            color: statusFilter === f.value ? '#F4E9CD' : '#777',
-                                            border: `1px solid ${statusFilter === f.value ? '#468189' : '#ddd'}`,
+                                            color:      statusFilter === f.value ? '#F4E9CD' : '#777',
+                                            border:     `1px solid ${statusFilter === f.value ? '#468189' : '#ddd'}`,
                                         }}>
                                         {f.label}
                                     </button>
@@ -286,20 +311,44 @@ export default function InventarioPage() {
                             </div>
                         </div>
 
-                        {/* Tabla de stock */}
+                        {/* Tabla */}
                         <div className="rounded-xl overflow-hidden shadow-sm"
                             style={{ border: '1px solid rgba(68,129,137,0.15)' }}>
-                            <div className="px-5 py-4" style={{ background: '#031926' }}>
+                            <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#031926' }}>
                                 <h3 className="font-bold text-sm" style={{ color: '#F4E9CD' }}>
                                     Stock por Producto
                                     <span className="ml-2 opacity-60 font-normal">({filtered.length} productos)</span>
                                 </h3>
+                                {totalPages > 1 && (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                                            disabled={page === 1}
+                                            className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30"
+                                            style={{ background: 'rgba(255,255,255,0.1)', color: '#F4E9CD' }}
+                                        >
+                                            ‹
+                                        </button>
+                                        <span className="text-xs" style={{ color: '#9DBEBB' }}>
+                                            {page} / {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={page === totalPages}
+                                            className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30"
+                                            style={{ background: 'rgba(255,255,255,0.1)', color: '#F4E9CD' }}
+                                        >
+                                            ›
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             {productsLoading ? (
                                 <div className="p-12 text-center">
                                     <Loader2 className="w-8 h-8 animate-spin mx-auto" style={{ color: '#468189' }} />
                                 </div>
                             ) : (
+                                <>
                                 <table className="w-full">
                                     <thead>
                                         <tr style={{ background: '#f8fafa', borderBottom: '1px solid #eee' }}>
@@ -312,10 +361,10 @@ export default function InventarioPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filtered.map((p, i) => {
+                                        {paginated.map((p, i) => {
                                             const status = getStatus(p)
-                                            const cfg = STATUS_CONFIG[status]
-                                            const valor = Number(p.stock) * Number((p as any).purchase_price || 0)
+                                            const cfg    = STATUS_CONFIG[status]
+                                            const valor  = Number(p.stock) * Number((p as any).purchase_price || 0)
                                             return (
                                                 <tr key={p.id}
                                                     style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
@@ -325,43 +374,30 @@ export default function InventarioPage() {
                                                             {cfg.label}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-xs font-mono font-bold"
-                                                        style={{ color: '#468189' }}>{p.code}</td>
-                                                    <td className="px-4 py-3 text-sm font-semibold"
-                                                        style={{ color: '#031926' }}>{p.name}</td>
+                                                    <td className="px-4 py-3 text-xs font-mono font-bold" style={{ color: '#468189' }}>{p.code}</td>
+                                                    <td className="px-4 py-3 text-sm font-semibold" style={{ color: '#031926' }}>{p.name}</td>
                                                     <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>
                                                         {(p as any).product_categories?.name ?? '—'}
                                                     </td>
                                                     <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{p.unit}</td>
-                                                    {/* Stock total */}
-                                                    <td className="px-4 py-3 text-sm font-bold text-center"
-                                                        style={{ color: cfg.color }}>
+                                                    <td className="px-4 py-3 text-sm font-bold text-center" style={{ color: cfg.color }}>
                                                         {Number(p.stock).toLocaleString('es-HN')}
                                                     </td>
-
-                                                    {/* Reservado */}
-                                                    <td className="px-4 py-3 text-sm text-center"
-                                                        style={{ color: '#e67e22' }}>
+                                                    <td className="px-4 py-3 text-sm text-center" style={{ color: '#e67e22' }}>
                                                         {Number((p as any).stock_reserved ?? 0) > 0
                                                             ? Number((p as any).stock_reserved).toLocaleString('es-HN')
-                                                            : '—'
-                                                        }
+                                                            : '—'}
                                                     </td>
-
-                                                    {/* Disponible */}
-                                                    <td className="px-4 py-3 text-sm font-bold text-center"
-                                                        style={{ color: '#27ae60' }}>
+                                                    <td className="px-4 py-3 text-sm font-bold text-center" style={{ color: '#27ae60' }}>
                                                         {(Number(p.stock) - Number((p as any).stock_reserved ?? 0)).toLocaleString('es-HN')}
                                                     </td>
-                                                    <td className="px-4 py-3 text-xs text-center"
-                                                        style={{ color: '#777' }}>
+                                                    <td className="px-4 py-3 text-xs text-center" style={{ color: '#777' }}>
                                                         {Number(p.min_stock).toLocaleString('es-HN')}
                                                     </td>
                                                     <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>
                                                         {(p as any).purchase_price ? fmt((p as any).purchase_price) : '—'}
                                                     </td>
-                                                    <td className="px-4 py-3 text-sm font-bold"
-                                                        style={{ color: '#468189' }}>
+                                                    <td className="px-4 py-3 text-sm font-bold" style={{ color: '#468189' }}>
                                                         {valor > 0 ? fmt(valor) : '—'}
                                                     </td>
                                                     <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{fmt(p.price_a)}</td>
@@ -372,6 +408,65 @@ export default function InventarioPage() {
                                         })}
                                     </tbody>
                                 </table>
+
+                                {/* Paginación inferior */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between px-5 py-3"
+                                        style={{ borderTop: '1px solid #f0f0f0', background: '#fafafa' }}>
+                                        <p className="text-xs" style={{ color: '#9DBEBB' }}>
+                                            Mostrando {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de {filtered.length} productos
+                                        </p>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => setPage(1)}
+                                                disabled={page === 1}
+                                                className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30"
+                                                style={{ border: '1px solid #ddd', color: '#555' }}
+                                            >
+                                                «
+                                            </button>
+                                            <button
+                                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                                disabled={page === 1}
+                                                className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30"
+                                                style={{ border: '1px solid #ddd', color: '#555' }}
+                                            >
+                                                ‹
+                                            </button>
+                                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                const p = Math.max(1, Math.min(page - 2, totalPages - 4)) + i
+                                                return (
+                                                    <button key={p} onClick={() => setPage(p)}
+                                                        className="w-7 h-7 rounded text-xs font-bold"
+                                                        style={{
+                                                            background: page === p ? '#468189' : 'transparent',
+                                                            color:      page === p ? '#F4E9CD' : '#555',
+                                                            border:     `1px solid ${page === p ? '#468189' : '#ddd'}`,
+                                                        }}>
+                                                        {p}
+                                                    </button>
+                                                )
+                                            })}
+                                            <button
+                                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={page === totalPages}
+                                                className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30"
+                                                style={{ border: '1px solid #ddd', color: '#555' }}
+                                            >
+                                                ›
+                                            </button>
+                                            <button
+                                                onClick={() => setPage(totalPages)}
+                                                disabled={page === totalPages}
+                                                className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30"
+                                                style={{ border: '1px solid #ddd', color: '#555' }}
+                                            >
+                                                »
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -404,7 +499,7 @@ export default function InventarioPage() {
                                 </thead>
                                 <tbody>
                                     {rotation?.map((p, i) => {
-                                        const cfg = ROTATION_CONFIG[p.rotacion as keyof typeof ROTATION_CONFIG]
+                                        const cfg   = ROTATION_CONFIG[p.rotacion as keyof typeof ROTATION_CONFIG]
                                         const valor = Number(p.valor_stock)
                                         return (
                                             <tr key={p.id}
@@ -415,10 +510,8 @@ export default function InventarioPage() {
                                                         {cfg.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-xs font-mono font-bold"
-                                                    style={{ color: '#468189' }}>{p.code}</td>
-                                                <td className="px-4 py-3 text-sm font-semibold"
-                                                    style={{ color: '#031926' }}>{p.name}</td>
+                                                <td className="px-4 py-3 text-xs font-mono font-bold" style={{ color: '#468189' }}>{p.code}</td>
+                                                <td className="px-4 py-3 text-sm font-semibold" style={{ color: '#031926' }}>{p.name}</td>
                                                 <td className="px-4 py-3 text-center">
                                                     <p className="text-sm font-bold" style={{ color: cfg.color }}>
                                                         {Number(p.stock).toLocaleString('es-HN')}
@@ -432,8 +525,7 @@ export default function InventarioPage() {
                                                         {(Number(p.stock) - Number((p as any).stock_reserved ?? 0)).toLocaleString('es-HN')} disp.
                                                     </p>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm font-bold text-center"
-                                                    style={{ color: cfg.color }}>
+                                                <td className="px-4 py-3 text-sm font-bold text-center" style={{ color: cfg.color }}>
                                                     {Number(p.total_vendido).toLocaleString('es-HN')} {p.unit}
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-center" style={{ color: '#555' }}>
