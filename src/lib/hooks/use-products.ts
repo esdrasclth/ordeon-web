@@ -13,9 +13,8 @@ export function useProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, product_categories(id, name, color)')
         .order('code', { ascending: true })
-
       if (error) {
         console.error('useProducts error:', error)
         throw error
