@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { canAccess } from '@/lib/permissions'
+import { canAccess, canAccessModule } from '@/lib/permissions'
 import { UserRole } from '@/types'
 
 export async function proxy(request: NextRequest) {
@@ -43,30 +43,49 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && pathname.startsWith('/dashboard')) {
-    // Leer el rol desde los metadatos de la sesión primero
-    // y como fallback consultar profiles
     let role: UserRole = 'vendedor'
+    let modules: string[] = ['core']
+    let is_superadmin = false
 
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_superadmin, companies(modules, active)')
         .eq('id', user.id)
         .single()
 
-      if (profile?.role) {
-        role = profile.role as UserRole
+      if (profile?.role) role = profile.role as UserRole
+      if (profile?.is_superadmin) is_superadmin = true
+
+      const company = (profile?.companies as any)
+
+      // Si empresa inactiva → suspendida
+      if (!is_superadmin && company && !company.active) {
+        return NextResponse.redirect(new URL('/suspendida', request.url))
       }
+
+      if (company?.modules) modules = company.modules
+
     } catch {
-      // Si falla la consulta, denegar acceso a rutas protegidas
       role = 'vendedor'
     }
 
-    const allowed = canAccess(role, pathname)
+    // Superadmin puede ir a cualquier ruta
+    if (is_superadmin) return supabaseResponse
 
+    // Verificar rol
+    const allowed = canAccess(role, pathname)
     if (!allowed) {
       const url = new URL('/dashboard', request.url)
       url.searchParams.set('denied', '1')
+      return NextResponse.redirect(url)
+    }
+
+    // Verificar módulo
+    const moduleAllowed = canAccessModule(modules, pathname)
+    if (!moduleAllowed) {
+      const url = new URL('/dashboard', request.url)
+      url.searchParams.set('modulo', '1')
       return NextResponse.redirect(url)
     }
   }

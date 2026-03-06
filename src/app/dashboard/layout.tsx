@@ -37,6 +37,7 @@ export default async function DashboardLayout({
         userRole={(profile?.role ?? 'vendedor') as UserRole}
         isSuperAdmin={profile?.is_superadmin ?? false}
         companyName={company?.name ?? ''}
+        modules={company?.modules ?? ['core']}
       />
       <main className="flex-1 overflow-auto">
         <div className="p-8">

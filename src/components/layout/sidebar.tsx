@@ -15,13 +15,15 @@ import { ArrowLeftRight } from 'lucide-react'
 import { Boxes } from 'lucide-react'
 import { useNotifications } from '@/lib/hooks/use-notifications'
 import { NotificationsPanel } from '@/components/layout/notifications-panel'
+import { Lock } from 'lucide-react'
+import { MODULE_ROUTES } from '@/lib/permissions'
 
 const ALL_NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/ordenes', label: 'Órdenes', icon: ShoppingCart },
   { href: '/dashboard/inventario', label: 'Inventario', icon: Boxes },
   { href: '/dashboard/movimientos', label: 'Movimientos', icon: ArrowLeftRight },
   { href: '/dashboard/productos', label: 'Productos', icon: Package2 },
+  { href: '/dashboard/ordenes', label: 'Órdenes', icon: ShoppingCart },
   { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
   { href: '/dashboard/usuarios', label: 'Usuarios', icon: UserCog },
   { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
@@ -32,9 +34,10 @@ interface SidebarProps {
   userRole: UserRole
   isSuperAdmin?: boolean
   companyName?: string
+  modules?: string[]
 }
 
-export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName }: SidebarProps) {
+export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName, modules = [] }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -120,13 +123,42 @@ export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName 
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-hidden">
-        {visibleItems.map(item => {
+        {ALL_NAV_ITEMS.map(item => {
           const Icon = item.icon
           const active = pathname === item.href
+
+          // Verificar si el módulo está activo para este item
+          const itemModule = Object.entries(MODULE_ROUTES).find(([_, routes]) =>
+            routes.some(r => item.href === r)
+          )?.[0]
+
+          const moduleLocked = !isSuperAdmin && itemModule && !modules.includes(itemModule)
+
+          if (moduleLocked) {
+            return (
+              <div key={item.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
+                style={{
+                  opacity: 0.4,
+                  cursor: 'not-allowed',
+                  border: '1px solid transparent',
+                  color: 'rgba(244,233,205,0.3)',
+                }}
+                title={`Módulo "${itemModule}" no incluido en tu plan`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {!collapsed && (
+                  <div className="flex items-center justify-between flex-1">
+                    <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
+                    <Lock className="w-3 h-3" />
+                  </div>
+                )}
+              </div>
+            )
+          }
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
+            <Link key={item.href} href={item.href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150"
               style={{
                 background: active ? 'rgba(68,129,137,0.3)' : 'transparent',
@@ -136,24 +168,20 @@ export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName 
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
               {!collapsed && (
-                <span className="text-sm font-medium whitespace-nowrap">
-                  {item.label}
-                </span>
+                <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
               )}
             </Link>
           )
         })}
 
         {isSuperAdmin && !collapsed && (
-          <Link
-            href="/superadmin"
+          <Link href="/superadmin"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg mt-4 transition-all"
             style={{
               background: 'rgba(217,79,79,0.1)',
               border: '1px solid rgba(217,79,79,0.3)',
               color: '#d94f4f',
-            }}
-          >
+            }}>
             <Settings className="w-4 h-4 flex-shrink-0" />
             <span className="text-xs font-bold whitespace-nowrap">Panel SuperAdmin</span>
           </Link>

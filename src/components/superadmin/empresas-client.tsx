@@ -27,13 +27,20 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
 
   const handleToggleActive = async (company: any) => {
     setLoading(company.id)
-    const { error } = await supabase
-      .from('companies')
-      .update({ active: !company.active })
-      .eq('id', company.id)
 
-    if (error) {
-      toast.error('Error al actualizar el estado')
+    const res = await fetch('/api/superadmin/toggle-company', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_id: company.id,
+        active: !company.active,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      toast.error('Error al actualizar el estado: ' + data.error)
     } else {
       toast.success(company.active ? `${company.name} desactivada` : `${company.name} activada`)
       router.refresh()
@@ -43,10 +50,11 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
 
   const handleSave = async (data: any) => {
     if (editingCompany) {
-      // Editar — sí cerrar al terminar
-      const { error } = await supabase
-        .from('companies')
-        .update({
+      const res = await fetch('/api/superadmin/update-company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: editingCompany.id,
           name: data.name,
           slug: data.slug,
           plan: data.plan,
@@ -57,16 +65,18 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
           notes: data.notes,
           payment_day: data.payment_day,
           next_payment_at: data.next_payment_at || null,
-        })
-        .eq('id', editingCompany.id)
+        }),
+      })
 
-      if (error) { toast.error('Error al actualizar'); return }
+      const result = await res.json()
+      if (!res.ok) { toast.error('Error al actualizar: ' + result.error); return }
       toast.success('Empresa actualizada')
       setShowForm(false)
       setEditingCompany(null)
       router.refresh()
+
     } else {
-      // Crear — NO cerrar, el form avanza al paso 2
+      // Crear — igual que antes con supabase directo
       const { error } = await supabase
         .from('companies')
         .insert({
@@ -89,11 +99,10 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
         } else {
           toast.error('Error al crear la empresa')
         }
-        throw error // importante: lanzar el error para que el form no avance
+        throw error
       }
 
       router.refresh()
-      // No cerramos — el EmpresaForm avanza al paso 2 solo
     }
   }
 
