@@ -30,9 +30,11 @@ const ALL_NAV_ITEMS = [
 interface SidebarProps {
   userName: string
   userRole: UserRole
+  isSuperAdmin?: boolean
+  companyName?: string
 }
 
-export function Sidebar({ userName, userRole }: SidebarProps) {
+export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -100,12 +102,19 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
           <Package2 className="w-4 h-4" style={{ color: '#F4E9CD' }} />
         </div>
         {!collapsed && (
-          <span
-            className="font-bold text-base tracking-wide"
-            style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}
-          >
-            Ordeon
-          </span>
+          <div>
+            <span
+              className="font-bold text-base tracking-wide block"
+              style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}
+            >
+              Ordeon
+            </span>
+            {companyName && (
+              <span className="text-xs block" style={{ color: 'rgba(244,233,205,0.45)', whiteSpace: 'nowrap' }}>
+                {companyName}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -134,6 +143,21 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
             </Link>
           )
         })}
+
+        {isSuperAdmin && !collapsed && (
+          <Link
+            href="/superadmin"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg mt-4 transition-all"
+            style={{
+              background: 'rgba(217,79,79,0.1)',
+              border: '1px solid rgba(217,79,79,0.3)',
+              color: '#d94f4f',
+            }}
+          >
+            <Settings className="w-4 h-4 flex-shrink-0" />
+            <span className="text-xs font-bold whitespace-nowrap">Panel SuperAdmin</span>
+          </Link>
+        )}
       </nav>
 
       {/* User */}
