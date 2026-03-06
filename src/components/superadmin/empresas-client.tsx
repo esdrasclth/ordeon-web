@@ -11,19 +11,19 @@ import { EmpresaForm } from '@/components/superadmin/empresa-form'
 const supabase = createClient()
 
 const PLAN_COLORS: Record<string, string> = {
-  basico:        '#9DBEBB',
-  profesional:   '#468189',
-  completo:      '#031926',
+  basico: '#9DBEBB',
+  profesional: '#468189',
+  completo: '#031926',
   personalizado: '#e67e22',
 }
 
 const ALL_MODULES = ['core', 'ventas', 'clientes', 'reportes', 'compras', 'facturacion', 'logistica', 'multi_bodega']
 
 export function EmpresasClient({ companies }: { companies: any[] }) {
-  const router  = useRouter()
-  const [showForm,       setShowForm]       = useState(false)
+  const router = useRouter()
+  const [showForm, setShowForm] = useState(false)
   const [editingCompany, setEditingCompany] = useState<any | null>(null)
-  const [loading,        setLoading]        = useState<string | null>(null)
+  const [loading, setLoading] = useState<string | null>(null)
 
   const handleToggleActive = async (company: any) => {
     setLoading(company.id)
@@ -43,41 +43,44 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
 
   const handleSave = async (data: any) => {
     if (editingCompany) {
-      // Editar
+      // Editar — sí cerrar al terminar
       const { error } = await supabase
         .from('companies')
         .update({
-          name:            data.name,
-          slug:            data.slug,
-          plan:            data.plan,
-          modules:         data.modules,
-          email:           data.email,
-          phone:           data.phone,
-          address:         data.address,
-          notes:           data.notes,
-          payment_day:     data.payment_day,
+          name: data.name,
+          slug: data.slug,
+          plan: data.plan,
+          modules: data.modules,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          notes: data.notes,
+          payment_day: data.payment_day,
           next_payment_at: data.next_payment_at || null,
         })
         .eq('id', editingCompany.id)
 
       if (error) { toast.error('Error al actualizar'); return }
       toast.success('Empresa actualizada')
+      setShowForm(false)
+      setEditingCompany(null)
+      router.refresh()
     } else {
-      // Crear
+      // Crear — NO cerrar, el form avanza al paso 2
       const { error } = await supabase
         .from('companies')
         .insert({
-          name:            data.name,
-          slug:            data.slug,
-          plan:            data.plan,
-          modules:         data.modules,
-          email:           data.email,
-          phone:           data.phone,
-          address:         data.address,
-          notes:           data.notes,
-          payment_day:     data.payment_day,
+          name: data.name,
+          slug: data.slug,
+          plan: data.plan,
+          modules: data.modules,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          notes: data.notes,
+          payment_day: data.payment_day,
           next_payment_at: data.next_payment_at || null,
-          active:          true,
+          active: true,
         })
 
       if (error) {
@@ -86,14 +89,12 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
         } else {
           toast.error('Error al crear la empresa')
         }
-        return
+        throw error // importante: lanzar el error para que el form no avance
       }
-      toast.success('Empresa creada exitosamente')
-    }
 
-    setShowForm(false)
-    setEditingCompany(null)
-    router.refresh()
+      router.refresh()
+      // No cerramos — el EmpresaForm avanza al paso 2 solo
+    }
   }
 
   return (
@@ -153,7 +154,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                   <span className="text-xs px-2 py-1 rounded-full font-bold capitalize"
                     style={{
                       background: `${PLAN_COLORS[c.plan] ?? '#468189'}18`,
-                      color:       PLAN_COLORS[c.plan] ?? '#468189',
+                      color: PLAN_COLORS[c.plan] ?? '#468189',
                     }}>
                     {c.plan}
                   </span>
@@ -175,18 +176,18 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                 <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>
                   {c.next_payment_at
                     ? (() => {
-                        const days = Math.ceil(
-                          (new Date(c.next_payment_at).getTime() - Date.now()) / 86400000
-                        )
-                        return (
-                          <div>
-                            <p>{new Date(c.next_payment_at).toLocaleDateString('es-HN')}</p>
-                            <p style={{ color: days <= 5 ? '#d94f4f' : days <= 10 ? '#e67e22' : '#27ae60' }}>
-                              {days < 0 ? `Vencido hace ${Math.abs(days)}d` : `En ${days} días`}
-                            </p>
-                          </div>
-                        )
-                      })()
+                      const days = Math.ceil(
+                        (new Date(c.next_payment_at).getTime() - Date.now()) / 86400000
+                      )
+                      return (
+                        <div>
+                          <p>{new Date(c.next_payment_at).toLocaleDateString('es-HN')}</p>
+                          <p style={{ color: days <= 5 ? '#d94f4f' : days <= 10 ? '#e67e22' : '#27ae60' }}>
+                            {days < 0 ? `Vencido hace ${Math.abs(days)}d` : `En ${days} días`}
+                          </p>
+                        </div>
+                      )
+                    })()
                     : <span style={{ color: '#ccc' }}>—</span>
                   }
                 </td>
@@ -196,7 +197,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                   <span className="text-xs px-2 py-1 rounded-full font-bold"
                     style={{
                       background: c.active ? '#27ae6015' : '#d94f4f15',
-                      color:      c.active ? '#27ae60'   : '#d94f4f',
+                      color: c.active ? '#27ae60' : '#d94f4f',
                     }}>
                     {c.active ? 'Activa' : 'Inactiva'}
                   </span>
@@ -216,7 +217,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                       style={{ color: c.active ? '#d94f4f' : '#27ae60' }}>
                       {c.active
                         ? <PowerOff className="w-3.5 h-3.5" />
-                        : <Power    className="w-3.5 h-3.5" />
+                        : <Power className="w-3.5 h-3.5" />
                       }
                     </Button>
                   </div>
@@ -232,7 +233,11 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
         <EmpresaForm
           company={editingCompany}
           onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditingCompany(null) }}
+          onClose={() => {
+            setShowForm(false)
+            setEditingCompany(null)
+            router.refresh()
+          }}
         />
       )}
     </div>
