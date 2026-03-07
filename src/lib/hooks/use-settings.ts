@@ -130,3 +130,18 @@ export function useToggleListValue() {
     },
   })
 }
+
+export function useDeleteListValue() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, list_type }: { id: string; list_type: string }) => {
+      const { error } = await supabase.rpc('delete_list_value', { p_id: id })
+      if (error) throw error
+      return { list_type }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['list_values', data.list_type] })
+    },
+  })
+}

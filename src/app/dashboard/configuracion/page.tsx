@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSettings, useUpdateSetting, useListValues, useCreateListValue, useToggleListValue } from '@/lib/hooks/use-settings'
+import { useSettings, useUpdateSetting, useListValues, useCreateListValue, useToggleListValue, useDeleteListValue  } from '@/lib/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog'
-import { Loader2, Plus, ToggleLeft, ToggleRight, Building2, DollarSign, Truck, CreditCard } from 'lucide-react'
+import { Loader2, Plus, ToggleLeft, ToggleRight, Building2, DollarSign, Truck, CreditCard, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 // ── Componente: sección de empresa / fiscal ─────────────────────────
@@ -35,13 +35,13 @@ function EmpresaTab() {
   // Inicializar el form una sola vez cuando llegan los settings
   if (settings && !initialized) {
     setForm({
-      company_name:            settings.company_name            ?? '',
-      company_rtn:             settings.company_rtn             ?? '',
-      company_phone:           settings.company_phone           ?? '',
-      company_email:           settings.company_email           ?? '',
-      company_address:         settings.company_address         ?? '',
-      isv_rate:                settings.isv_rate                ?? '',
-      max_discount_vendor:     settings.max_discount_vendor     ?? '',
+      company_name: settings.company_name ?? '',
+      company_rtn: settings.company_rtn ?? '',
+      company_phone: settings.company_phone ?? '',
+      company_email: settings.company_email ?? '',
+      company_address: settings.company_address ?? '',
+      isv_rate: settings.isv_rate ?? '',
+      max_discount_vendor: settings.max_discount_vendor ?? '',
       max_discount_supervisor: settings.max_discount_supervisor ?? '',
     })
     setInitialized(true)
@@ -191,9 +191,10 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
   const { data: items, isLoading } = useListValues(listType)
   const createItem = useCreateListValue()
   const toggleItem = useToggleListValue()
+  const deleteItem = useDeleteListValue()
   const [showModal, setShowModal] = useState(false)
   const [newLabel, setNewLabel] = useState('')
-  const [newValue, setNewValue] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleCreate = async () => {
     if (!newLabel.trim()) return
@@ -201,12 +202,11 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
       await createItem.mutateAsync({
         list_type: listType,
         label: newLabel.trim(),
-        value: newValue.trim() || newLabel.trim().toLowerCase().replace(/\s+/g, '_'),
+        value: newLabel.trim().toLowerCase().replace(/\s+/g, '_'),
         sort_order: (items?.length ?? 0) + 1,
       })
       toast.success('Agregado correctamente')
       setNewLabel('')
-      setNewValue('')
       setShowModal(false)
     } catch {
       toast.error('Error al agregar')
@@ -222,20 +222,27 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
     }
   }
 
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteItem.mutateAsync({ id, list_type: listType })
+      toast.success('Eliminado correctamente')
+      setDeletingId(null)
+    } catch {
+      toast.error('Error al eliminar')
+    }
+  }
+
   return (
-    <div className="rounded-xl p-5 shadow-sm" style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.12)' }}>
+    <div className="rounded-xl p-5 shadow-sm"
+      style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.12)' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {icon}
           <h3 className="font-bold text-sm" style={{ color: '#031926' }}>{title}</h3>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setShowModal(true)}
-          style={{ background: '#468189', color: '#F4E9CD' }}
-        >
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          Agregar
+        <Button size="sm" onClick={() => setShowModal(true)}
+          style={{ background: '#468189', color: '#F4E9CD' }}>
+          <Plus className="w-3.5 h-3.5 mr-1" /> Agregar
         </Button>
       </div>
 
@@ -248,13 +255,12 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
       ) : (
         <div className="space-y-2">
           {items?.map(item => (
-            <div
-              key={item.id}
+            <div key={item.id}
               className="flex items-center justify-between px-4 py-3 rounded-lg"
-              style={{ background: item.active ? '#f8fafa' : '#f5f5f5', border: '1px solid #eee' }}
-            >
+              style={{ background: item.active ? '#f8fafa' : '#f5f5f5', border: '1px solid #eee' }}>
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium" style={{ color: item.active ? '#031926' : '#aaa' }}>
+                <span className="text-sm font-medium"
+                  style={{ color: item.active ? '#031926' : '#aaa' }}>
                   {item.label}
                 </span>
                 <span className="text-xs font-mono" style={{ color: '#9DBEBB' }}>
@@ -264,21 +270,21 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
               <div className="flex items-center gap-2">
                 <Badge style={{
                   background: item.active ? '#27ae60' : '#bbb',
-                  color: '#fff',
-                  border: 'none',
-                  fontSize: 10
+                  color: '#fff', border: 'none', fontSize: 10,
                 }}>
                   {item.active ? 'Activo' : 'Inactivo'}
                 </Badge>
-                <button
-                  onClick={() => handleToggle(item.id, item.active)}
-                  style={{ color: item.active ? '#468189' : '#bbb' }}
-                  className="transition-colors"
-                >
+                <button onClick={() => handleToggle(item.id, item.active)}
+                  style={{ color: item.active ? '#468189' : '#bbb' }}>
                   {item.active
                     ? <ToggleRight className="w-5 h-5" />
-                    : <ToggleLeft className="w-5 h-5" />
-                  }
+                    : <ToggleLeft className="w-5 h-5" />}
+                </button>
+                <button
+                  onClick={() => setDeletingId(item.id)}
+                  style={{ color: '#d94f4f' }}
+                  title="Eliminar">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -308,18 +314,39 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
               />
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowModal(false)}>
-                Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
               <Button
                 onClick={handleCreate}
                 disabled={!newLabel.trim() || createItem.isPending}
-                style={{ background: '#468189', color: '#F4E9CD' }}
-              >
+                style={{ background: '#468189', color: '#F4E9CD' }}>
                 {createItem.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Agregar
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal confirmar eliminar */}
+      <Dialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              ¿Eliminar elemento?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm" style={{ color: '#555' }}>
+            Esta acción no se puede deshacer.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setDeletingId(null)}>Cancelar</Button>
+            <Button
+              onClick={() => deletingId && handleDelete(deletingId)}
+              disabled={deleteItem.isPending}
+              style={{ background: '#d94f4f', color: '#fff', border: 'none' }}>
+              {deleteItem.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Eliminar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
