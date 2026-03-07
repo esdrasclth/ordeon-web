@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package2, Users, UserCog,
   Settings, LogOut, ShoppingCart,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Receipt 
 } from 'lucide-react'
 import { useState } from 'react'
 import { UserRole } from '@/types'
@@ -19,14 +19,15 @@ import { Lock } from 'lucide-react'
 import { MODULE_ROUTES } from '@/lib/permissions'
 
 const ALL_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/inventario', label: 'Inventario', icon: Boxes },
-  { href: '/dashboard/movimientos', label: 'Movimientos', icon: ArrowLeftRight },
-  { href: '/dashboard/productos', label: 'Productos', icon: Package2 },
-  { href: '/dashboard/ordenes', label: 'Órdenes', icon: ShoppingCart },
-  { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { href: '/dashboard/usuarios', label: 'Usuarios', icon: UserCog },
-  { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
+  { href: '/dashboard',                label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/dashboard/inventario',     label: 'Inventario',    icon: Boxes           },
+  { href: '/dashboard/movimientos',    label: 'Movimientos',   icon: ArrowLeftRight  },
+  { href: '/dashboard/productos',      label: 'Productos',     icon: Package2        },
+  { href: '/dashboard/ordenes',        label: 'Órdenes',       icon: ShoppingCart    },
+  { href: '/dashboard/clientes',       label: 'Clientes',      icon: Users           },
+  { href: '/dashboard/facturacion',    label: 'Facturación',   icon: Receipt         },
+  { href: '/dashboard/usuarios',       label: 'Usuarios',      icon: UserCog         },
+  { href: '/dashboard/configuracion',  label: 'Configuración', icon: Settings        },
 ]
 
 interface SidebarProps {

@@ -82,9 +82,21 @@ export function useCreateClient() {
 
   return useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'created_at' | 'updated_at'>) => {
+      // Obtener company_id del usuario actual
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.company_id) throw new Error('Sin empresa asignada')
+
       const { data, error } = await supabase
         .from('clients')
-        .insert(client)
+        .insert({ ...client, company_id: profile.company_id })
         .select()
         .single()
 

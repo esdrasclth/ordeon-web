@@ -12,6 +12,9 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard/configuracion',
     '/dashboard/movimientos',
     '/dashboard/inventario',
+    '/dashboard/facturacion',
+    '/dashboard/facturacion/nueva',
+    '/dashboard/facturacion/config',
   ],
   supervisor: [
     '/dashboard',
@@ -61,6 +64,9 @@ export const MODULE_ROUTES: Record<string, string[]> = {
   ],
   facturacion: [
     '/dashboard/facturacion',
+    '/dashboard/facturacion',
+    '/dashboard/facturacion/nueva',
+    '/dashboard/facturacion/config',
   ],
   logistica: [
     '/dashboard/logistica',
@@ -105,57 +111,57 @@ export function canAccess(role: UserRole, pathname: string): boolean {
 
 // Acciones permitidas por rol
 export const ROLE_ACTIONS: Record<UserRole, {
-  canCreateOrder:    boolean
-  canCancelOrder:    boolean
+  canCreateOrder: boolean
+  canCancelOrder: boolean
   canManageProducts: boolean
-  canManageClients:  boolean
-  canManageUsers:    boolean
-  canInvoice:        boolean
-  canViewAllOrders:  boolean
+  canManageClients: boolean
+  canManageUsers: boolean
+  canInvoice: boolean
+  canViewAllOrders: boolean
 }> = {
   admin: {
-    canCreateOrder:    true,
-    canCancelOrder:    true,
+    canCreateOrder: true,
+    canCancelOrder: true,
     canManageProducts: true,
-    canManageClients:  true,
-    canManageUsers:    true,
-    canInvoice:        true,
-    canViewAllOrders:  true,
+    canManageClients: true,
+    canManageUsers: true,
+    canInvoice: true,
+    canViewAllOrders: true,
   },
   supervisor: {
-    canCreateOrder:    true,
-    canCancelOrder:    true,
+    canCreateOrder: true,
+    canCancelOrder: true,
     canManageProducts: true,
-    canManageClients:  true,
-    canManageUsers:    false,
-    canInvoice:        true,
-    canViewAllOrders:  true,
+    canManageClients: true,
+    canManageUsers: false,
+    canInvoice: true,
+    canViewAllOrders: true,
   },
   vendedor: {
-    canCreateOrder:    true,
-    canCancelOrder:    true,
+    canCreateOrder: true,
+    canCancelOrder: true,
     canManageProducts: false,
-    canManageClients:  false,
-    canManageUsers:    false,
-    canInvoice:        false,
-    canViewAllOrders:  false,
+    canManageClients: false,
+    canManageUsers: false,
+    canInvoice: false,
+    canViewAllOrders: false,
   },
   almacen: {
-    canCreateOrder:    true,
-    canCancelOrder:    true,
+    canCreateOrder: true,
+    canCancelOrder: true,
     canManageProducts: false,
-    canManageClients:  false,
-    canManageUsers:    false,
-    canInvoice:        false,
-    canViewAllOrders:  true,
+    canManageClients: false,
+    canManageUsers: false,
+    canInvoice: false,
+    canViewAllOrders: true,
   },
   facturacion: {
-    canCreateOrder:    false,
-    canCancelOrder:    false,
+    canCreateOrder: false,
+    canCancelOrder: false,
     canManageProducts: false,
-    canManageClients:  false,
-    canManageUsers:    false,
-    canInvoice:        true,
-    canViewAllOrders:  true,
+    canManageClients: false,
+    canManageUsers: false,
+    canInvoice: true,
+    canViewAllOrders: true,
   },
 }

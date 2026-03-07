@@ -47,9 +47,20 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: async (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.company_id) throw new Error('Sin empresa asignada')
+
       const { data, error } = await supabase
         .from('products')
-        .insert(product)
+        .insert({ ...product, company_id: profile.company_id })
         .select()
         .single()
 
