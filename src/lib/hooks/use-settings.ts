@@ -9,14 +9,23 @@ export function useSettings() {
   return useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
       const { data, error } = await supabase
         .from('settings')
         .select('*')
+        .eq('company_id', profile!.company_id)
         .order('key')
 
       if (error) throw error
 
-      // Convertir array a objeto { key: value }
       return data.reduce((acc, row) => {
         acc[row.key] = row.value
         return acc
@@ -47,10 +56,20 @@ export function useListValues(listType: string) {
   return useQuery({
     queryKey: ['list_values', listType],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
       const { data, error } = await supabase
         .from('list_values')
         .select('*')
         .eq('list_type', listType)
+        .eq('company_id', profile!.company_id)
         .order('sort_order')
 
       if (error) throw error
@@ -69,9 +88,18 @@ export function useCreateListValue() {
       label: string
       sort_order?: number
     }) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
       const { data, error } = await supabase
         .from('list_values')
-        .upsert(item)
+        .upsert({ ...item, company_id: profile!.company_id })
         .select()
         .single()
 
