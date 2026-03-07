@@ -20,8 +20,6 @@ export async function POST(req: Request) {
       .eq('id', session.user.id)
       .single()
 
-    console.log('INVOICE CONFIG PROFILE:', profile)
-
     if (!profile?.company_id) {
       return NextResponse.json({ error: 'Sin empresa asignada' }, { status: 403 })
     }
@@ -34,23 +32,36 @@ export async function POST(req: Request) {
     const { action, ...data } = body
 
     if (action === 'upsert') {
+      const rangeStart = parseInt(data.range_from?.split('-').pop() ?? '1', 10)
+
       const { data: existing } = await supabaseAdmin
         .from('invoice_configs')
-        .select('id')
+        .select('id, range_from')
         .eq('company_id', profile.company_id)
         .single()
 
       if (existing) {
+        // Solo resetear correlativo si cambió el rango
+        const rangeChanged = existing.range_from !== data.range_from
+
         const { error } = await supabaseAdmin
           .from('invoice_configs')
-          .update({ ...data, updated_at: new Date().toISOString() })
+          .update({
+            ...data,
+            ...(rangeChanged ? { current_correlative: rangeStart } : {}),
+            updated_at: new Date().toISOString(),
+          })
           .eq('company_id', profile.company_id)
 
         if (error) return NextResponse.json({ error: error.message }, { status: 400 })
       } else {
         const { error } = await supabaseAdmin
           .from('invoice_configs')
-          .insert({ ...data, company_id: profile.company_id, current_correlative: 1 })
+          .insert({
+            ...data,
+            company_id:          profile.company_id,
+            current_correlative: rangeStart,
+          })
 
         if (error) return NextResponse.json({ error: error.message }, { status: 400 })
       }

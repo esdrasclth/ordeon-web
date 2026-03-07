@@ -1,21 +1,23 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { InvoicePDFDocument } from '@/components/facturacion/invoice-pdf-document'
+import { Download, ArrowLeft } from 'lucide-react'
 
 const fmt = (n: number) =>
   `L. ${Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
 export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
-  useEffect(() => {
-    // Auto-print al abrir
-    setTimeout(() => window.print(), 800)
-  }, [])
+  const [mounted, setMounted] = useState(false)
 
-  const items = invoice.invoice_items ?? []
+  useEffect(() => { setMounted(true) }, [])
+
+  const items    = invoice.invoice_items ?? []
+  const filename = `Factura-${invoice.invoice_number}.pdf`
 
   return (
     <>
-      {/* Estilos solo para impresión */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -23,10 +25,10 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
           @page { size: letter; margin: 15mm; }
         }
         body { font-family: Arial, sans-serif; background: #f5f5f5; }
-        .page { 
-          background: #fff; 
-          max-width: 800px; 
-          margin: 20px auto; 
+        .page {
+          background: #fff;
+          max-width: 800px;
+          margin: 20px auto;
           padding: 32px;
           box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
@@ -37,18 +39,43 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
         .mono { font-family: 'Courier New', monospace; }
       `}</style>
 
-      {/* Botón volver — no imprime */}
+      {/* Botones — no imprimen */}
       <div className="no-print" style={{
-        position: 'fixed', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 100
+        position: 'fixed', top: 16, right: 16,
+        display: 'flex', gap: 8, zIndex: 100,
       }}>
-        <button onClick={() => window.history.back()}
-          style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}>
-          ← Volver
+        <button
+          onClick={() => window.history.back()}
+          style={{
+            padding: '8px 16px', borderRadius: 8,
+            border: '1px solid #ccc', background: '#fff',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 13,
+          }}>
+          <ArrowLeft size={14} /> Volver
         </button>
-        <button onClick={() => window.print()}
-          style={{ padding: '8px 16px', borderRadius: 8, background: '#468189', color: '#F4E9CD', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
-          🖨️ Imprimir / Guardar PDF
-        </button>
+
+        {mounted && (
+          <PDFDownloadLink
+            document={<InvoicePDFDocument invoice={invoice} config={config} />}
+            fileName={filename}
+            style={{ textDecoration: 'none' }}
+          >
+            {({ loading }) => (
+              <button style={{
+                padding: '8px 16px', borderRadius: 8,
+                background: loading ? '#9DBEBB' : '#468189',
+                color: '#F4E9CD', border: 'none',
+                cursor: loading ? 'wait' : 'pointer',
+                fontWeight: 700, fontSize: 13,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <Download size={14} />
+                {loading ? 'Preparando...' : 'Descargar PDF'}
+              </button>
+            )}
+          </PDFDownloadLink>
+        )}
       </div>
 
       <div className="page">
@@ -71,7 +98,7 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
           <div style={{ textAlign: 'right' }}>
             <div style={{
               background: invoice.status === 'anulada' ? '#d94f4f' : '#031926',
-              color: '#F4E9CD', padding: '8px 16px', borderRadius: 8, marginBottom: 8
+              color: '#F4E9CD', padding: '8px 16px', borderRadius: 8, marginBottom: 8,
             }}>
               <p style={{ fontSize: 10, margin: 0, opacity: 0.7 }}>FACTURA</p>
               <p style={{ fontSize: 18, fontWeight: 900, margin: 0, fontFamily: 'Courier New' }}>
@@ -82,17 +109,14 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
               Fecha: <strong>{new Date(invoice.issued_at).toLocaleDateString('es-HN')}</strong>
             </p>
             {invoice.status === 'anulada' && (
-              <p style={{ fontSize: 12, fontWeight: 900, color: '#d94f4f', margin: '4px 0' }}>
-                ⚠ ANULADA
-              </p>
+              <p style={{ fontSize: 12, fontWeight: 900, color: '#d94f4f', margin: '4px 0' }}>⚠ ANULADA</p>
             )}
           </div>
         </div>
 
-        {/* Línea divisora */}
         <hr style={{ border: 'none', borderTop: '2px solid #031926', marginBottom: 20 }} />
 
-        {/* Datos del cliente */}
+        {/* Cliente */}
         <div style={{ background: '#f8fafa', borderRadius: 8, padding: '12px 16px', marginBottom: 20 }}>
           <p style={{ fontSize: 10, fontWeight: 700, color: '#9DBEBB', margin: '0 0 6px', textTransform: 'uppercase' }}>
             Cliente
@@ -100,9 +124,7 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: '#031926', margin: 0 }}>{invoice.client_name}</p>
             {invoice.client_rtn && (
-              <p style={{ fontSize: 11, color: '#555', margin: 0 }}>
-                RTN: <span className="mono">{invoice.client_rtn}</span>
-              </p>
+              <p style={{ fontSize: 11, color: '#555', margin: 0 }}>RTN: <span className="mono">{invoice.client_rtn}</span></p>
             )}
             {invoice.client_address && (
               <p style={{ fontSize: 11, color: '#555', margin: 0 }}>{invoice.client_address}</p>
@@ -113,7 +135,7 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
           </div>
         </div>
 
-        {/* Tabla de items */}
+        {/* Tabla items */}
         <table style={{ marginBottom: 20 }}>
           <thead>
             <tr>
@@ -134,18 +156,12 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
                 <tr key={i}>
                   <td style={{ color: '#031926', fontWeight: 500 }}>{item.description}</td>
                   <td style={{ textAlign: 'center', color: '#555' }}>{Number(item.quantity)}</td>
-                  <td style={{ textAlign: 'right', color: '#555' }}>
-                    {fmt(Number(item.unit_price))}
-                  </td>
+                  <td style={{ textAlign: 'right', color: '#555' }}>{fmt(Number(item.unit_price))}</td>
                   <td style={{ textAlign: 'right', color: '#d94f4f' }}>
                     {Number(item.discount_pct) > 0 ? `${Number(item.discount_pct)}%` : '-'}
                   </td>
-                  <td style={{ textAlign: 'right', color: '#555' }}>
-                    {fmt(isvAmount)}
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#031926' }}>
-                    {fmt(lineTotal)}
-                  </td>
+                  <td style={{ textAlign: 'right', color: '#555' }}>{fmt(isvAmount)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#031926' }}>{fmt(lineTotal)}</td>
                 </tr>
               )
             })}
@@ -171,7 +187,7 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
               display: 'flex', justifyContent: 'space-between',
               padding: '8px 0', marginTop: 4,
               borderTop: '2px solid #031926',
-              fontSize: 15, fontWeight: 900, color: '#031926'
+              fontSize: 15, fontWeight: 900, color: '#031926',
             }}>
               <span>TOTAL</span>
               <span>{fmt(Number(invoice.total))}</span>
@@ -180,24 +196,14 @@ export function InvoicePDF({ invoice, config }: { invoice: any; config: any }) {
         </div>
 
         {/* CAI */}
-        <div style={{
-          background: '#f8fafa', borderRadius: 8, padding: '10px 14px',
-          fontSize: 10, color: '#555', marginBottom: 16
-        }}>
+        <div style={{ background: '#f8fafa', borderRadius: 8, padding: '10px 14px', fontSize: 10, color: '#555', marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            <p style={{ margin: 0 }}>
-              <strong>CAI:</strong> <span className="mono">{invoice.cai}</span>
-            </p>
-            <p style={{ margin: 0 }}>
-              <strong>Fecha límite emisión:</strong> {new Date(invoice.cai_expires_at).toLocaleDateString('es-HN')}
-            </p>
-            <p style={{ margin: 0 }}>
-              <strong>Rango autorizado:</strong> <span className="mono">{invoice.range_from} — {invoice.range_to}</span>
-            </p>
+            <p style={{ margin: 0 }}><strong>CAI:</strong> <span className="mono">{invoice.cai}</span></p>
+            <p style={{ margin: 0 }}><strong>Fecha límite emisión:</strong> {new Date(invoice.cai_expires_at).toLocaleDateString('es-HN')}</p>
+            <p style={{ margin: 0 }}><strong>Rango autorizado:</strong> <span className="mono">{invoice.range_from} — {invoice.range_to}</span></p>
           </div>
         </div>
 
-        {/* Notas y footer */}
         {invoice.notes && (
           <p style={{ fontSize: 11, color: '#555', marginBottom: 12 }}>
             <strong>Notas:</strong> {invoice.notes}

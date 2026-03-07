@@ -28,9 +28,13 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  const isAuthRoute = pathname.startsWith('/login')
-  const isPublicRoute = pathname === '/' || pathname.startsWith('/suspendida') || pathname.startsWith('/sin-empresa')
-  const isApiRoute = pathname.startsWith('/api')
+  const isAuthRoute    = pathname.startsWith('/login')
+  const isPublicRoute  = pathname === '/'
+    || pathname.startsWith('/suspendida')
+    || pathname.startsWith('/sin-empresa')
+    || pathname.startsWith('/factura')
+  const isApiRoute     = pathname.startsWith('/api')
+  const isSuperAdmin   = pathname.startsWith('/superadmin')
 
   if (isPublicRoute || isApiRoute) return supabaseResponse
 
@@ -42,24 +46,44 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  // Rutas /superadmin — verificar que sea superadmin
+  if (user && isSuperAdmin) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_superadmin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_superadmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    return supabaseResponse
+  }
+
   if (user && pathname.startsWith('/dashboard')) {
-    let role: UserRole = 'vendedor'
+    let role: UserRole   = 'vendedor'
     let modules: string[] = ['core']
-    let is_superadmin = false
+    let is_superadmin    = false
 
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, is_superadmin, companies(modules, active)')
+        .select('role, is_superadmin, company_id, companies(modules, active)')
         .eq('id', user.id)
         .single()
 
-      if (profile?.role) role = profile.role as UserRole
+      if (profile?.role)         role          = profile.role as UserRole
       if (profile?.is_superadmin) is_superadmin = true
 
       const company = (profile?.companies as any)
 
-      // Si empresa inactiva → suspendida
+      // Sin empresa → sin-empresa (excepto superadmin)
+      if (!is_superadmin && !profile?.company_id) {
+        return NextResponse.redirect(new URL('/sin-empresa', request.url))
+      }
+
+      // Empresa inactiva → suspendida
       if (!is_superadmin && company && !company.active) {
         return NextResponse.redirect(new URL('/suspendida', request.url))
       }
@@ -74,16 +98,14 @@ export async function proxy(request: NextRequest) {
     if (is_superadmin) return supabaseResponse
 
     // Verificar rol
-    const allowed = canAccess(role, pathname)
-    if (!allowed) {
+    if (!canAccess(role, pathname)) {
       const url = new URL('/dashboard', request.url)
       url.searchParams.set('denied', '1')
       return NextResponse.redirect(url)
     }
 
     // Verificar módulo
-    const moduleAllowed = canAccessModule(modules, pathname)
-    if (!moduleAllowed) {
+    if (!canAccessModule(modules, pathname)) {
       const url = new URL('/dashboard', request.url)
       url.searchParams.set('modulo', '1')
       return NextResponse.redirect(url)
