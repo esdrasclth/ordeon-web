@@ -54,6 +54,8 @@ export const MODULE_ROUTES: Record<string, string[]> = {
   ventas: [
     '/dashboard/ordenes',
     '/dashboard/ordenes/nueva',
+  ],
+  clientes: [
     '/dashboard/clientes',
   ],
   reportes: [
@@ -63,7 +65,6 @@ export const MODULE_ROUTES: Record<string, string[]> = {
     '/dashboard/compras',
   ],
   facturacion: [
-    '/dashboard/facturacion',
     '/dashboard/facturacion',
     '/dashboard/facturacion/nueva',
     '/dashboard/facturacion/config',

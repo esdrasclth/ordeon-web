@@ -11,7 +11,7 @@ const supabase = createClient()
 
 const ALL_MODULES = [
   { key: 'core', label: 'Core' },
-  { key: 'ventas', label: 'Ventas' },
+  { key: 'ventas', label: 'Ordenes' },
   { key: 'clientes', label: 'Clientes' },
   { key: 'reportes', label: 'Reportes' },
   { key: 'compras', label: 'Compras' },
@@ -45,7 +45,9 @@ export function EmpresaForm({
     isEditing ? company.id : null
   )
 
-  const [modules, setModules] = useState<string[]>(company?.modules ?? ['core', 'ventas'])
+  const [modules, setModules] = useState<string[]>(
+    company?.modules ?? ['core']
+  )
   const [form, setForm] = useState({
     name: company?.name ?? '',
     slug: company?.slug ?? '',
