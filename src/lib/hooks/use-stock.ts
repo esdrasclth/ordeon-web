@@ -6,14 +6,30 @@ import { StockMovement } from '@/types'
 
 const supabase = createClient()
 
+async function getCompanyId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.company_id) throw new Error('Sin empresa asignada')
+  return profile.company_id
+}
+
 export function useStockMovements(productId: string) {
   return useQuery({
     queryKey: ['stock-movements', productId],
     queryFn: async () => {
+      const companyId = await getCompanyId()
       const { data, error } = await supabase
         .from('stock_movements')
         .select('*, profiles(full_name)')
         .eq('product_id', productId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(50)
       if (error) throw error
@@ -32,9 +48,9 @@ export function useProductStats(productId: string) {
       })
       if (error) throw error
       return data as {
-        total_sold: number
-        total_orders: number
-        last_sale: string | null
+        total_sold:    number
+        total_orders:  number
+        last_sale:     string | null
         total_revenue: number
       }
     },
@@ -49,15 +65,15 @@ export function useAdjustStock() {
       product_id, quantity, type, notes
     }: {
       product_id: string
-      quantity: number
-      type: string
-      notes?: string
+      quantity:   number
+      type:       string
+      notes?:     string
     }) => {
       const { error } = await supabase.rpc('adjust_stock', {
         p_product_id: product_id,
-        p_quantity: quantity,
-        p_type: type,
-        p_notes: notes ?? null,
+        p_quantity:   quantity,
+        p_type:       type,
+        p_notes:      notes ?? null,
       })
       if (error) throw error
     },
@@ -70,28 +86,27 @@ export function useAdjustStock() {
 }
 
 export function useAllMovements(filters?: {
-  type?: string
+  type?:       string
   product_id?: string
-  from?: string
-  to?: string
+  from?:       string
+  to?:         string
 }) {
   return useQuery({
     queryKey: ['movements', filters],
     queryFn: async () => {
+      const companyId = await getCompanyId()
+
       let query = supabase
         .from('stock_movements')
-        .select(`
-                *,
-                profiles (full_name),
-                products  (id, code, name, unit, purchase_price)
-              `)
+        .select(`*, profiles(full_name), products(id, code, name, unit, purchase_price)`)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(200)
 
-      if (filters?.type) query = query.eq('type', filters.type)
+      if (filters?.type)       query = query.eq('type', filters.type)
       if (filters?.product_id) query = query.eq('product_id', filters.product_id)
-      if (filters?.from) query = query.gte('created_at', filters.from)
-      if (filters?.to) query = query.lte('created_at', filters.to)
+      if (filters?.from)       query = query.gte('created_at', filters.from)
+      if (filters?.to)         query = query.lte('created_at', filters.to)
 
       const { data, error } = await query
       if (error) throw error
@@ -105,19 +120,19 @@ export function useAdjustStockBatch() {
   return useMutation({
     mutationFn: async (params: {
       movements: { product_id: string; quantity: number }[]
-      type: string
+      type:       string
       reference?: string
-      supplier?: string
-      reason?: string
-      notes?: string
+      supplier?:  string
+      reason?:    string
+      notes?:     string
     }) => {
       const { error } = await supabase.rpc('adjust_stock_batch', {
         p_movements: params.movements,
-        p_type: params.type,
+        p_type:      params.type,
         p_reference: params.reference ?? null,
-        p_supplier: params.supplier ?? null,
-        p_reason: params.reason ?? null,
-        p_notes: params.notes ?? null,
+        p_supplier:  params.supplier  ?? null,
+        p_reason:    params.reason    ?? null,
+        p_notes:     params.notes     ?? null,
       })
       if (error) throw error
     },
@@ -171,17 +186,17 @@ export function useProductRotation(days = 90) {
       const { data, error } = await supabase.rpc('get_product_rotation', { p_days: days })
       if (error) throw error
       return data as {
-        id:               string
-        code:             string
-        name:             string
-        unit:             string
-        stock:            number
-        min_stock:        number
-        purchase_price:   number
-        valor_stock:      number
-        total_vendido:    number
-        num_movimientos:  number
-        rotacion:         string
+        id:              string
+        code:            string
+        name:            string
+        unit:            string
+        stock:           number
+        min_stock:       number
+        purchase_price:  number
+        valor_stock:     number
+        total_vendido:   number
+        num_movimientos: number
+        rotacion:        string
       }[]
     },
   })

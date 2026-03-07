@@ -117,9 +117,19 @@ export function useLowStockProducts() {
   return useQuery({
     queryKey: ['low-stock'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
       const { data, error } = await supabase
         .from('products')
         .select('id, name, code, stock, min_stock, unit')
+        .eq('company_id', profile!.company_id)
         .eq('active', true)
         .order('stock', { ascending: true })
         .limit(50)
@@ -133,9 +143,19 @@ export function useOverCreditClients() {
   return useQuery({
     queryKey: ['over-credit-clients'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
       const { data, error } = await supabase
         .from('clients')
         .select('id, name, city, current_balance, credit_limit')
+        .eq('company_id', profile!.company_id)
         .eq('status', 'active')
         .gt('credit_limit', 0)
         .order('current_balance', { ascending: false })
