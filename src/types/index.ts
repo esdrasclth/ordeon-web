@@ -173,3 +173,64 @@ export interface WarehouseStock {
   updated_at: string
   products?: { name: string; code: string; unit: string }
 }
+
+// ─── Contabilidad ─────────────────────────────────────────────────────────────
+
+export type AccountType = 'activo' | 'pasivo' | 'capital' | 'ingreso' | 'gasto' | 'costo'
+
+export interface Account {
+  id: string
+  company_id: string
+  code: string
+  name: string
+  type: AccountType
+  subtype: string | null
+  parent_id: string | null
+  is_detail: boolean
+  active: boolean
+  created_at: string
+}
+
+export type JournalEntrySource =
+  | 'manual'
+  | 'venta'
+  | 'compra'
+  | 'ajuste_stock'
+  | 'factura'
+  | 'pago'
+  | 'devolucion'
+
+export interface JournalEntry {
+  id: string
+  company_id: string
+  period_id: string | null
+  entry_number: number
+  date: string
+  description: string
+  reference: string | null
+  source: JournalEntrySource
+  source_id: string | null
+  created_by: string | null
+  created_at: string
+  journal_lines?: JournalLine[]
+}
+
+export interface JournalLine {
+  id: string
+  entry_id: string
+  account_id: string
+  debit: number
+  credit: number
+  description: string | null
+  accounts?: Account
+}
+
+export interface AccountingPeriod {
+  id: string
+  company_id: string
+  name: string
+  start_date: string
+  end_date: string
+  status: 'open' | 'closed'
+  created_at: string
+}

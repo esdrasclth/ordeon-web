@@ -10,14 +10,15 @@ import { toast } from 'sonner'
 const supabase = createClient()
 
 const ALL_MODULES = [
-  { key: 'core', label: 'Core' },
-  { key: 'ventas', label: 'Ordenes' },
-  { key: 'clientes', label: 'Clientes' },
-  { key: 'reportes', label: 'Reportes' },
-  { key: 'compras', label: 'Compras' },
-  { key: 'facturacion', label: 'Facturación' },
-  { key: 'logistica', label: 'Logística' },
-  { key: 'multi_bodega', label: 'Multi-bodega' },
+  { key: 'core',          label: 'Core' },
+  { key: 'ventas',        label: 'Ordenes' },
+  { key: 'clientes',      label: 'Clientes' },
+  { key: 'reportes',      label: 'Reportes' },
+  { key: 'compras',       label: 'Compras' },
+  { key: 'facturacion',   label: 'Facturación' },
+  { key: 'logistica',     label: 'Logística' },
+  { key: 'multi_bodega',  label: 'Multi-bodega' },
+  { key: 'contabilidad',  label: 'Contabilidad' },
 ]
 
 const PLANES = ['basico', 'profesional', 'completo', 'personalizado']

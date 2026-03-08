@@ -16,6 +16,16 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard/facturacion/nueva',
     '/dashboard/facturacion/config',
     '/dashboard/bodegas',
+    '/dashboard/contabilidad',
+    '/dashboard/contabilidad/cuentas',
+    '/dashboard/contabilidad/diario',
+    '/dashboard/contabilidad/diario/nuevo',
+    '/dashboard/contabilidad/mayor',
+    '/dashboard/contabilidad/comprobacion',
+    '/dashboard/contabilidad/balance',
+    '/dashboard/contabilidad/resultados',
+    '/dashboard/contabilidad/periodos',
+    '/dashboard/contabilidad/impuestos',
   ],
   supervisor: [
     '/dashboard',
@@ -75,6 +85,18 @@ export const MODULE_ROUTES: Record<string, string[]> = {
   ],
   multi_bodega: [
     '/dashboard/bodegas',
+  ],
+  contabilidad: [
+    '/dashboard/contabilidad',
+    '/dashboard/contabilidad/cuentas',
+    '/dashboard/contabilidad/diario',
+    '/dashboard/contabilidad/diario/nuevo',
+    '/dashboard/contabilidad/mayor',
+    '/dashboard/contabilidad/comprobacion',
+    '/dashboard/contabilidad/balance',
+    '/dashboard/contabilidad/resultados',
+    '/dashboard/contabilidad/periodos',
+    '/dashboard/contabilidad/impuestos',
   ],
 }
 
