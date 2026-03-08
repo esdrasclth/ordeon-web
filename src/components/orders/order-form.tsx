@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useProducts } from '@/lib/hooks/use-products'
 import { useClients } from '@/lib/hooks/use-clients'
 import { useSettings, useListValues } from '@/lib/hooks/use-settings'
@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue
 } from '@/components/ui/select'
+import { ChevronDown, X } from 'lucide-react'
 import { Loader2, Plus, Trash2, Search, AlertCircle } from 'lucide-react'
 import { OrderItemForm, Client } from '@/types'
 import { toast } from 'sonner'
@@ -40,6 +41,9 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: O
   const [items, setItems] = useState<OrderItemForm[]>([])
   const [productSearch, setProductSearch] = useState('')
   const [showProducts, setShowProducts] = useState(false)
+  const [clientSearch, setClientSearch] = useState('')
+  const [showClients, setShowClients] = useState(false)
+  const clientRef = useRef<HTMLDivElement>(null)
 
   const isvRate = Number(settings?.isv_rate ?? 15)
 
@@ -59,7 +63,38 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: O
     setClientId(id)
     const client = clients?.find(c => c.id === id) ?? null
     setSelectedClient(client)
+    setClientSearch(client?.name ?? '')
+    setShowClients(false)
   }
+
+  const handleClearClient = () => {
+    setClientId('')
+    setSelectedClient(null)
+    setClientSearch('')
+    setShowClients(false)
+  }
+
+  // Cerrar dropdown de clientes al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (clientRef.current && !clientRef.current.contains(e.target as Node)) {
+        setShowClients(false)
+        // Si no seleccionó ningún cliente, restaurar el nombre del cliente seleccionado
+        if (selectedClient) setClientSearch(selectedClient.name)
+        else setClientSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [selectedClient])
+
+  const filteredClients = clients?.filter(c =>
+    c.status === 'active' && (
+      c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      (c.code ?? '').toLowerCase().includes(clientSearch.toLowerCase()) ||
+      (c.rtn ?? '').includes(clientSearch)
+    )
+  ).slice(0, 10) ?? []
 
   const getPriceForClient = (product: any, priceList: string) => {
     if (priceList === 'A') return Number(product.price_a)
@@ -200,18 +235,81 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: O
         <p className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#468189' }}>
           Cliente
         </p>
-        <Select value={clientId} onValueChange={handleSelectClient}>
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Seleccionar cliente..." />
-          </SelectTrigger>
-          <SelectContent>
-            {clients?.filter(c => c.status === 'active').map(c => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name} — Lista {c.price_list}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Combobox searchable */}
+        <div ref={clientRef} className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: '#9DBEBB' }} />
+            <input
+              type="text"
+              value={clientSearch}
+              onChange={e => { setClientSearch(e.target.value); setShowClients(true) }}
+              onFocus={() => setShowClients(true)}
+              placeholder="Buscar cliente por nombre, código o RTN..."
+              className="w-full h-10 pl-10 pr-8 rounded-md border text-sm outline-none transition-colors"
+              style={{
+                borderColor: showClients ? '#468189' : 'rgba(68,129,137,0.3)',
+                boxShadow: showClients ? '0 0 0 2px rgba(68,129,137,0.15)' : 'none',
+                color: '#031926',
+                background: '#fff',
+              }}
+            />
+            {clientSearch && (
+              <button
+                type="button"
+                onClick={handleClearClient}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: '#9DBEBB' }}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {!clientSearch && (
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: '#9DBEBB' }} />
+            )}
+          </div>
+
+          {showClients && (
+            <div
+              className="absolute z-20 mt-1 w-full rounded-lg overflow-hidden shadow-xl"
+              style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.25)' }}
+            >
+              {filteredClients.length === 0 ? (
+                <p className="p-3 text-sm text-center" style={{ color: '#9DBEBB' }}>Sin resultados</p>
+              ) : (
+                <ul className="max-h-56 overflow-y-auto">
+                  {filteredClients.map(c => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onMouseDown={e => { e.preventDefault(); handleSelectClient(c.id) }}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
+                        style={{
+                          background: c.id === clientId ? 'rgba(68,129,137,0.08)' : 'transparent',
+                          borderBottom: '1px solid #f5f5f5',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(68,129,137,0.06)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = c.id === clientId ? 'rgba(68,129,137,0.08)' : 'transparent')}
+                      >
+                        <div>
+                          <span className="text-sm font-semibold" style={{ color: '#031926' }}>{c.name}</span>
+                          {c.code && <span className="text-xs ml-2 font-mono" style={{ color: '#9DBEBB' }}>{c.code}</span>}
+                          {c.city && <span className="text-xs ml-1" style={{ color: '#9DBEBB' }}>· {c.city}</span>}
+                        </div>
+                        <span
+                          className="text-xs font-bold ml-3 flex-shrink-0 px-2 py-0.5 rounded-full"
+                          style={{ background: 'rgba(68,129,137,0.12)', color: '#468189' }}
+                        >
+                          Lista {c.price_list}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
 
         {selectedClient && (
           <div className="mt-3 grid grid-cols-3 gap-3">

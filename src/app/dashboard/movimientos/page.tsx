@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAllMovements, useAdjustStockBatch } from '@/lib/hooks/use-stock'
 import { useProducts } from '@/lib/hooks/use-products'
 import { Button } from '@/components/ui/button'
@@ -61,7 +61,21 @@ export default function MovimientosPage() {
     const [supplier, setSupplier] = useState('')
     const [reason, setReason] = useState('')
     const [notes, setNotes] = useState('')
-    const [search, setSearch] = useState('')
+    // Búsqueda por línea — cada línea tiene su propio texto de búsqueda y visibilidad de dropdown
+    const [lineSearches, setLineSearches] = useState<string[]>([''])
+    const [lineDropdowns, setLineDropdowns] = useState<boolean[]>([false])
+    const searchRefs = useRef<(HTMLDivElement | null)[]>([])
+
+    // Cerrar dropdowns al hacer click fuera
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            setLineDropdowns(prev => prev.map((_, i) =>
+                searchRefs.current[i]?.contains(e.target as Node) ? prev[i] : false
+            ))
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
 
     const openModal = (type: 'entrada' | 'salida' | 'ajuste') => {
         setModalType(type)
@@ -70,14 +84,22 @@ export default function MovimientosPage() {
         setSupplier('')
         setReason('')
         setNotes('')
-        setSearch('')
+        setLineSearches([''])
+        setLineDropdowns([false])
         setShowModal(true)
     }
 
-    const addLine = () => setLines(l => [...l, { product_id: '', quantity: '' }])
+    const addLine = () => {
+        setLines(l => [...l, { product_id: '', quantity: '' }])
+        setLineSearches(s => [...s, ''])
+        setLineDropdowns(d => [...d, false])
+    }
 
-    const removeLine = (i: number) =>
+    const removeLine = (i: number) => {
         setLines(l => l.filter((_, idx) => idx !== i))
+        setLineSearches(s => s.filter((_, idx) => idx !== i))
+        setLineDropdowns(d => d.filter((_, idx) => idx !== i))
+    }
 
     const updateLine = (i: number, field: keyof MovementLine, value: string) =>
         setLines(l => l.map((line, idx) => idx === i ? { ...line, [field]: value } : line))
@@ -121,13 +143,17 @@ export default function MovimientosPage() {
         return matchType && matchSearch
     }) ?? []
 
-    // Productos filtrados para el buscador del modal
-    const filteredProducts = products?.filter(p =>
-        p.active && (
-            p.name.toLowerCase().includes(search.toLowerCase()) ||
-            p.code.toLowerCase().includes(search.toLowerCase())
-        )
-    ) ?? []
+    // Productos filtrados por texto de búsqueda de cada línea
+    const getFilteredProducts = (lineIdx: number) => {
+        const q = lineSearches[lineIdx]?.toLowerCase() ?? ''
+        return (products?.filter(p =>
+            p.active && (
+                q === '' ||
+                p.name.toLowerCase().includes(q) ||
+                p.code.toLowerCase().includes(q)
+            )
+        ) ?? []).slice(0, 8)
+    }
 
     // KPIs del día
     const today = new Date().toDateString()
@@ -469,55 +495,97 @@ export default function MovimientosPage() {
                                 </div>
                             </div>
 
-                            {/* Buscador de productos */}
+                            {/* Líneas de productos */}
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-wide mb-3"
                                     style={{ color: '#468189' }}>
                                     Productos
                                 </p>
-                                <div className="relative mb-3">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                                        style={{ color: '#9DBEBB' }} />
-                                    <Input
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        placeholder="Buscar producto por nombre o código..."
-                                        className="pl-10 h-10"
-                                    />
-                                </div>
 
-                                {/* Líneas de productos */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {lines.map((line, i) => {
                                         const selected = products?.find(p => p.id === line.product_id)
+                                        const filtered = getFilteredProducts(i)
                                         return (
                                             <div key={i} className="rounded-lg p-3"
                                                 style={{ background: '#f8fafa', border: '1px solid #e0eded' }}>
                                                 <div className="flex gap-3 items-start">
+                                                    {/* Combobox buscador por línea */}
                                                     <div className="flex-1">
-                                                        <Select
-                                                            value={line.product_id}
-                                                            onValueChange={v => updateLine(i, 'product_id', v)}
+                                                        <div
+                                                            ref={el => { searchRefs.current[i] = el }}
+                                                            className="relative"
                                                         >
-                                                            <SelectTrigger className="h-10">
-                                                                <SelectValue placeholder="Seleccionar producto..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {(search ? filteredProducts : products?.filter(p => p.active) ?? []).map(p => (
-                                                                    <SelectItem key={p.id} value={p.id}>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="font-mono text-xs"
-                                                                                style={{ color: '#9DBEBB' }}>{p.code}</span>
-                                                                            <span>{p.name}</span>
-                                                                            <span className="text-xs ml-auto"
-                                                                                style={{ color: '#468189' }}>
-                                                                                Stock: {p.stock} {p.unit}
-                                                                            </span>
-                                                                        </div>
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                                                                style={{ color: '#9DBEBB' }} />
+                                                            <input
+                                                                type="text"
+                                                                value={lineSearches[i] ?? ''}
+                                                                onChange={e => {
+                                                                    const v = e.target.value
+                                                                    setLineSearches(s => s.map((x, idx) => idx === i ? v : x))
+                                                                    setLineDropdowns(d => d.map((x, idx) => idx === i ? true : x))
+                                                                    // Si el usuario borra el texto, limpiar selección
+                                                                    if (!v) updateLine(i, 'product_id', '')
+                                                                }}
+                                                                onFocus={() =>
+                                                                    setLineDropdowns(d => d.map((x, idx) => idx === i ? true : x))
+                                                                }
+                                                                placeholder={selected ? selected.name : 'Buscar producto por nombre o código...'}
+                                                                className="w-full h-10 pl-10 pr-4 rounded-md border text-sm outline-none transition-colors"
+                                                                style={{
+                                                                    borderColor: lineDropdowns[i] ? '#468189' : 'rgba(68,129,137,0.3)',
+                                                                    boxShadow: lineDropdowns[i] ? '0 0 0 2px rgba(68,129,137,0.12)' : 'none',
+                                                                    color: '#031926',
+                                                                    background: '#fff',
+                                                                }}
+                                                            />
+
+                                                            {lineDropdowns[i] && (
+                                                                <div
+                                                                    className="absolute z-30 mt-1 w-full rounded-lg overflow-hidden shadow-xl"
+                                                                    style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.25)' }}
+                                                                >
+                                                                    {filtered.length === 0 ? (
+                                                                        <p className="p-3 text-sm text-center" style={{ color: '#9DBEBB' }}>Sin resultados</p>
+                                                                    ) : (
+                                                                        <ul className="max-h-52 overflow-y-auto">
+                                                                            {filtered.map(p => (
+                                                                                <li key={p.id}>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onMouseDown={e => {
+                                                                                            e.preventDefault()
+                                                                                            updateLine(i, 'product_id', p.id)
+                                                                                            setLineSearches(s => s.map((x, idx) => idx === i ? '' : x))
+                                                                                            setLineDropdowns(d => d.map((x, idx) => idx === i ? false : x))
+                                                                                        }}
+                                                                                        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
+                                                                                        style={{
+                                                                                            background: p.id === line.product_id ? 'rgba(68,129,137,0.08)' : 'transparent',
+                                                                                            borderBottom: '1px solid #f5f5f5',
+                                                                                        }}
+                                                                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(68,129,137,0.06)')}
+                                                                                        onMouseLeave={e => (e.currentTarget.style.background = p.id === line.product_id ? 'rgba(68,129,137,0.08)' : 'transparent')}
+                                                                                    >
+                                                                                        <div>
+                                                                                            <span className="font-mono text-xs mr-2" style={{ color: '#9DBEBB' }}>{p.code}</span>
+                                                                                            <span className="text-sm font-medium" style={{ color: '#031926' }}>{p.name}</span>
+                                                                                            <span className="text-xs ml-2" style={{ color: '#9DBEBB' }}>{p.unit}</span>
+                                                                                        </div>
+                                                                                        <span className="text-xs font-semibold ml-3 flex-shrink-0"
+                                                                                            style={{ color: Number(p.stock) <= Number(p.min_stock) ? '#e67e22' : '#27ae60' }}>
+                                                                                            Stock: {p.stock}
+                                                                                        </span>
+                                                                                    </button>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
                                                         {selected && (
                                                             <p className="text-xs mt-1" style={{ color: '#9DBEBB' }}>
                                                                 Stock actual: <strong style={{ color: '#031926' }}>
@@ -550,6 +618,7 @@ export default function MovimientosPage() {
                                                             </p>
                                                         )}
                                                     </div>
+
                                                     <div className="w-32">
                                                         <Input
                                                             type="number"

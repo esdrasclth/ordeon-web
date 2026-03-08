@@ -1,6 +1,7 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -13,12 +14,18 @@ import {
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { Client } from '@/types'
+import { useListValues } from '@/lib/hooks/use-settings'
 
 const clientSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   rtn: z.string().optional(),
   contact_name: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z.string()
+    .optional()
+    .refine(
+      v => !v || /^\+504 \d{4}-\d{4}$/.test(v),
+      { message: 'Formato requerido: +504 9999-9999' }
+    ),
   email: z.string().email('Correo inválido').optional().or(z.literal('')),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -39,18 +46,35 @@ interface ClientFormProps {
   loading?: boolean
 }
 
-const DEPARTMENTS = [
-  'Atlántida', 'Choluteca', 'Colón', 'Comayagua', 'Copán',
-  'Cortés', 'El Paraíso', 'Francisco Morazán', 'Gracias a Dios',
-  'Intibucá', 'Islas de la Bahía', 'La Paz', 'Lempira', 'Ocotepeque',
-  'Olancho', 'Santa Bárbara', 'Valle', 'Yoro'
-]
+const DEPARTMENT_CITIES: Record<string, string[]> = {
+  'Atlántida':          ['La Ceiba', 'Tela', 'El Porvenir', 'Jutiapa', 'Arizona', 'La Masica', 'San Francisco', 'Esparta'],
+  'Choluteca':          ['Choluteca', 'Marcovia', 'San Marcos de Colón', 'Namasigüe', 'El Triunfo', 'Pespire', 'Orocuina', 'Duyure', 'Santa Ana de Yusguare', 'Morolica'],
+  'Colón':              ['Trujillo', 'Tocoa', 'Sonaguera', 'Sabá', 'Bonito Oriental', 'Balfate', 'Iriona', 'Limón', 'Santa Rosa de Aguán'],
+  'Comayagua':          ['Comayagua', 'Siguatepeque', 'La Trinidad', 'Villa de San Antonio', 'Ajuterique', 'El Rosario', 'Lamaní', 'Lejamaní', 'Meámbar', 'Minas de Oro', 'San Jerónimo', 'San José de Comayagua', 'San Luis', 'Taulabé'],
+  'Copán':              ['Santa Rosa de Copán', 'La Entrada', 'Copán Ruinas', 'Florida', 'Nueva Arcadia', 'San Agustín', 'San Antonio', 'Cabañas', 'Cucuyagua', 'Dolores', 'El Paraíso', 'San Juan de Opoa', 'Santa Rita', 'Trinidad de Copán'],
+  'Cortés':             ['San Pedro Sula', 'Choloma', 'La Lima', 'Villanueva', 'Puerto Cortés', 'Omoa', 'San Antonio de Cortés', 'Santa Cruz de Yojoa', 'Pimienta', 'Potrerillos'],
+  'El Paraíso':         ['Yuscarán', 'Danlí', 'El Paraíso', 'Teupasenti', 'Jacaleapa', 'Liure', 'Morocelí', 'Oropolí', 'San Antonio de Flores', 'San Lucas', 'Vado Ancho', 'Yauguipe'],
+  'Francisco Morazán':  ['Tegucigalpa', 'Comayagüela', 'Valle de Ángeles', 'Santa Lucía', 'Talanga', 'Cedros', 'Guaimaca', 'La Libertad', 'Maraita', 'Ojojona', 'Orica', 'Reitoca', 'Sabanagrande', 'San Antonio de Oriente', 'San Ignacio', 'San Juan de Flores', 'Santa Ana', 'Tatumbla', 'Vallecillos'],
+  'Gracias a Dios':     ['Puerto Lempira', 'Brus Laguna', 'Ahuas', 'Juan Francisco Bulnes', 'Villeda Morales', 'Wampusirpe'],
+  'Intibucá':           ['La Esperanza', 'Intibucá', 'Camasca', 'Colomoncagua', 'Dolores', 'Jesús de Otoro', 'Magdalena', 'San Antonio', 'San Isidro', 'San Juan', 'San Marcos de la Sierra', 'Santa Lucía', 'Yamaranguila'],
+  'Islas de la Bahía':  ['Roatán', 'Utila', 'Guanaja', 'José Santos Guardiola'],
+  'La Paz':             ['La Paz', 'Marcala', 'Cane', 'Chinacla', 'Guajiquiro', 'Lauterique', 'Opatoro', 'San Antonio del Norte', 'San José', 'San Juan', 'San Pedro de Tutule', 'Santa Ana', 'Santa Elena', 'Santa María', 'Santiago de Puringla', 'Yarula'],
+  'Lempira':            ['Gracias', 'Lepaera', 'Belén', 'Candelaria', 'Cololaca', 'Erandique', 'Gualcince', 'Guarita', 'La Campa', 'La Iguala', 'Las Flores', 'La Unión', 'La Virtud', 'Mapulaca', 'Piraera', 'San Andrés', 'San Francisco', 'San Marcos de Caiquín', 'Talgua', 'Tomala', 'Valladolid', 'Virginia'],
+  'Ocotepeque':         ['Ocotepeque', 'Belén Gualcho', 'Concepción', 'La Labor', 'Lucerna', 'Mercedes', 'San Fernando', 'San Francisco del Valle', 'San Jorge', 'San Marcos', 'Santa Fe', 'Sensenti', 'Sinuapa'],
+  'Olancho':            ['Juticalpa', 'Catacamas', 'San Francisco de la Paz', 'Campamento', 'El Rosario', 'Gualaco', 'Guarizama', 'Guata', 'La Unión', 'Mangulile', 'Manto', 'Salamá', 'San Esteban', 'Dulce Nombre de Culmí', 'Silca', 'Yocón'],
+  'Santa Bárbara':      ['Santa Bárbara', 'Quimistán', 'El Níspero', 'Colinas', 'Las Vegas', 'Arada', 'Atima', 'Azacualpa', 'Ceguaca', 'Chinda', 'Concepción del Norte', 'Concepción del Sur', 'Gualala', 'Ilama', 'Macuelizo', 'Naranjito', 'Nuevo Celilac', 'Petoa', 'Protección', 'San Francisco de Ojuera', 'San José de Colinas', 'San Luis', 'San Marcos', 'San Nicolás', 'San Pedro Zacapa', 'Santa Rita', 'Talgua', 'Trinidad'],
+  'Valle':              ['Nacaome', 'Amapala', 'Alianza', 'Aramecina', 'Caridad', 'Goascorán', 'Langue', 'San Francisco de Coray', 'San Lorenzo'],
+  'Yoro':               ['Yoro', 'El Progreso', 'Olanchito', 'Morazán', 'El Negrito', 'Arenal', 'Jocón', 'Sulaco', 'Victoria', 'Yorito', 'Santa Rita'],
+}
 
-const PAYMENT_TERMS = [
-  'Contado', 'Crédito 15 días', 'Crédito 30 días', 'Crédito 45 días'
-]
+const DEPARTMENTS = Object.keys(DEPARTMENT_CITIES).sort()
+
+
 
 export function ClientForm({ client, onSubmit, onCancel, loading }: ClientFormProps) {
+  const { data: paymentTerms } = useListValues('payment_terms')
+  // Estado local para manejar el departamento y filtrar ciudades
+  const [selectedDept, setSelectedDept] = useState<string>(client?.department ?? '')
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema) as any,
     defaultValues: {
@@ -107,8 +131,25 @@ export function ClientForm({ client, onSubmit, onCancel, loading }: ClientFormPr
             <Field label="RTN">
               <Input {...register('rtn')} placeholder="05019999000000" className="h-10" maxLength={14} />
             </Field>
-            <Field label="Teléfono">
-              <Input {...register('phone')} placeholder="9999-9999" className="h-10" />
+            <Field label="Teléfono" error={errors.phone?.message}>
+              <Input
+                {...register('phone')}
+                placeholder="+504 9999-9999"
+                maxLength={14}
+                className="h-10"
+                onChange={e => {
+                  let val = e.target.value.replace(/[^\d+\- ]/g, '')
+                  // Auto-prefijo +504 si el usuario empieza a escribir dígitos
+                  if (val && !val.startsWith('+')) val = '+504 ' + val
+                  // Auto-insertar guión después del 4º dígito del número local
+                  const digits = val.replace(/^\+504 /, '')
+                  if (digits.length > 4 && !digits.includes('-')) {
+                    val = '+504 ' + digits.slice(0, 4) + '-' + digits.slice(4)
+                  }
+                  e.target.value = val
+                  register('phone').onChange(e)
+                }}
+              />
             </Field>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -130,16 +171,36 @@ export function ClientForm({ client, onSubmit, onCancel, loading }: ClientFormPr
             <Input {...register('address')} placeholder="Col. Trejo, calle principal" className="h-10" />
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="Ciudad">
-              <Input {...register('city')} placeholder="La Ceiba" className="h-10" />
-            </Field>
             <Field label="Departamento">
-              <Select defaultValue={watch('department') ?? ''} onValueChange={v => setValue('department', v)}>
+              <Select
+                defaultValue={watch('department') ?? ''}
+                onValueChange={v => {
+                  setValue('department', v)
+                  setValue('city', '')   // resetear ciudad al cambiar departamento
+                  setSelectedDept(v)
+                }}
+              >
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Seleccionar..." />
                 </SelectTrigger>
                 <SelectContent>
                   {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Ciudad">
+              <Select
+                value={watch('city') ?? ''}
+                onValueChange={v => setValue('city', v)}
+                disabled={!selectedDept}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder={selectedDept ? 'Seleccionar ciudad...' : 'Primero elige depto.'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(DEPARTMENT_CITIES[selectedDept] ?? []).map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -166,10 +227,12 @@ export function ClientForm({ client, onSubmit, onCancel, loading }: ClientFormPr
           <Field label="Términos de pago" required error={errors.payment_terms?.message}>
             <Select defaultValue={watch('payment_terms')} onValueChange={v => setValue('payment_terms', v)}>
               <SelectTrigger className="h-10">
-                <SelectValue />
+                <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
-                {PAYMENT_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {paymentTerms?.filter(t => t.active).map(t => (
+                  <SelectItem key={t.id} value={t.label}>{t.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>
