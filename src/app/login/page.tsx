@@ -59,7 +59,7 @@ export default function LoginPage() {
             Ordeon
           </h1>
           <p className="mt-1 text-sm" style={{ color: '#9DBEBB' }}>
-            Sistema de Gestión de Pedidos
+            Sistema de Gestión Empresarial
           </p>
         </div>
 
