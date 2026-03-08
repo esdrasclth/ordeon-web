@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { ChevronDown, X } from 'lucide-react'
 import { Loader2, Plus, Trash2, Search, AlertCircle } from 'lucide-react'
-import { OrderItemForm, Client } from '@/types'
+import { OrderItemForm, Client, Warehouse } from '@/types'
 import { toast } from 'sonner'
 
 interface OrderFormProps {
@@ -23,9 +23,11 @@ interface OrderFormProps {
   onSubmit: (data: any) => Promise<void>
   onCancel: () => void
   loading?: boolean
+  hasMultiBodega?: boolean
+  warehouses?: Warehouse[]
 }
 
-export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: OrderFormProps) {
+export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading, hasMultiBodega, warehouses }: OrderFormProps) {
   const { data: products } = useProducts()
   const { data: clients } = useClients()
   const { data: settings } = useSettings()
@@ -37,6 +39,7 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: O
   const [deliveryDate, setDeliveryDate] = useState('')
   const [paymentTerm, setPaymentTerm] = useState('')
   const [deliveryMethod, setDeliveryMethod] = useState('')
+  const [warehouseId, setWarehouseId] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<OrderItemForm[]>([])
   const [productSearch, setProductSearch] = useState('')
@@ -212,7 +215,7 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: O
       delivery_date: deliveryDate || null,
       payment_terms: paymentTerm,
       delivery_method: deliveryMethod,
-      warehouse_id: null,
+      warehouse_id: warehouseId || null,
       price_list: selectedClient?.price_list ?? 'B',
       notes,
       isv_rate: isvRate,
@@ -387,6 +390,29 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading }: O
               </SelectContent>
             </Select>
           </div>
+          {hasMultiBodega && warehouses && warehouses.length > 0 && (
+            <div>
+              <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
+                Bodega de despacho
+              </Label>
+              <Select value={warehouseId} onValueChange={setWarehouseId}>
+                <SelectTrigger className="mt-1 h-10">
+                  <SelectValue placeholder="Seleccionar bodega..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {warehouses.map(w => (
+                    <SelectItem key={w.id} value={w.id}>
+                      <span className="flex items-center gap-2">
+                        <span className="font-mono text-xs" style={{ color: '#9DBEBB' }}>{w.code}</span>
+                        {w.name}
+                        {w.is_default && <span className="text-xs" style={{ color: '#e67e22' }}>★</span>}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 

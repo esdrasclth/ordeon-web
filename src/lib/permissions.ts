@@ -15,6 +15,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard/facturacion',
     '/dashboard/facturacion/nueva',
     '/dashboard/facturacion/config',
+    '/dashboard/bodegas',
   ],
   supervisor: [
     '/dashboard',

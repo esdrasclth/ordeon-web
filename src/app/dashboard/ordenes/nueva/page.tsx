@@ -8,12 +8,17 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useModules } from '@/lib/hooks/use-current-user'
+import { useWarehouses } from '@/lib/hooks/use-warehouses'
 
 export default function NuevaOrdenPage() {
   const router = useRouter()
   const createOrder = useCreateOrder()
   const [vendorId,  setVendorId]  = useState<string | null>(null)
   const [userRole,  setUserRole]  = useState<string>('vendedor')
+  const { hasModule } = useModules()
+  const { data: warehouses } = useWarehouses()
+  const isMultiBodega = hasModule('multi_bodega')
 
   useEffect(() => {
     const supabase = createClient()
@@ -73,8 +78,10 @@ export default function NuevaOrdenPage() {
           onSubmit={handleCreate}
           onCancel={() => router.back()}
           loading={createOrder.isPending}
+          hasMultiBodega={isMultiBodega}
+          warehouses={warehouses}
         />
       )}
     </div>
   )
-}
+}

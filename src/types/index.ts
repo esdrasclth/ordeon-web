@@ -147,5 +147,29 @@ export interface StockMovement {
   notes: string | null
   created_by: string | null
   created_at: string
+  warehouse_id?: string | null
   profiles?: { full_name: string }
+}
+
+export interface Warehouse {
+  id: string
+  company_id: string
+  name: string
+  code: string
+  location: string | null
+  is_default: boolean
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface WarehouseStock {
+  id: string
+  warehouse_id: string
+  product_id: string
+  stock: number
+  min_stock: number
+  stock_reserved: number
+  updated_at: string
+  products?: { name: string; code: string; unit: string }
 }

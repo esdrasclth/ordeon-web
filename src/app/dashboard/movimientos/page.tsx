@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAllMovements, useAdjustStockBatch } from '@/lib/hooks/use-stock'
 import { useProducts } from '@/lib/hooks/use-products'
+import { useModules } from '@/lib/hooks/use-current-user'
+import { useWarehouses } from '@/lib/hooks/use-warehouses'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,7 +19,7 @@ import {
 } from '@/components/ui/select'
 import {
     Plus, Minus, RefreshCw, Search,
-    ArrowLeftRight, Loader2, Trash2, Package
+    ArrowLeftRight, Loader2, Trash2, Package, Warehouse
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -46,6 +48,9 @@ export default function MovimientosPage() {
     const { data: movements, isLoading: movementsLoading } = useAllMovements()
     const { data: products } = useProducts()
     const adjustBatch = useAdjustStockBatch()
+    const { hasModule } = useModules()
+    const isMultiBodega = hasModule('multi_bodega')
+    const { data: warehouses } = useWarehouses()
 
     // Filtros
     const [filterType, setFilterType] = useState('all')
@@ -61,6 +66,7 @@ export default function MovimientosPage() {
     const [supplier, setSupplier] = useState('')
     const [reason, setReason] = useState('')
     const [notes, setNotes] = useState('')
+    const [warehouseId, setWarehouseId] = useState('')
     // Búsqueda por línea — cada línea tiene su propio texto de búsqueda y visibilidad de dropdown
     const [lineSearches, setLineSearches] = useState<string[]>([''])
     const [lineDropdowns, setLineDropdowns] = useState<boolean[]>([false])
@@ -84,6 +90,7 @@ export default function MovimientosPage() {
         setSupplier('')
         setReason('')
         setNotes('')
+        setWarehouseId('')
         setLineSearches([''])
         setLineDropdowns([false])
         setShowModal(true)
@@ -110,6 +117,10 @@ export default function MovimientosPage() {
             toast.error('Agrega al menos un producto con cantidad válida')
             return
         }
+        if (isMultiBodega && !warehouseId) {
+            toast.error('Selecciona una bodega')
+            return
+        }
 
         try {
             await adjustBatch.mutateAsync({
@@ -122,6 +133,7 @@ export default function MovimientosPage() {
                 supplier: supplier || undefined,
                 reason: reason || undefined,
                 notes: notes || undefined,
+                warehouse_id: warehouseId || undefined,
             })
             toast.success(`${MOVEMENT_CONFIG[modalType].label} registrada correctamente`)
             setShowModal(false)
@@ -312,7 +324,9 @@ export default function MovimientosPage() {
                         <table className="w-full">
                             <thead>
                                 <tr style={{ background: '#f8fafa', borderBottom: '1px solid #eee' }}>
-                                    {['Fecha', 'Tipo', 'Producto', 'Cant.', 'Antes', 'Después', 'Valor L.', 'Referencia', 'Proveedor/Motivo', 'Usuario', 'Notas'].map(h => (
+                                    {['Fecha', 'Tipo', 'Producto', 'Cant.', 'Antes', 'Después', 'Valor L.', 'Referencia', 'Proveedor/Motivo', 'Usuario', 'Notas',
+                                        ...(isMultiBodega ? ['Bodega'] : [])
+                                    ].map(h => (
                                         <th key={h} className="px-4 py-3 text-left whitespace-nowrap"
                                             style={{ fontSize: 11, color: '#9DBEBB', fontWeight: 700 }}>
                                             {h}
@@ -404,7 +418,22 @@ export default function MovimientosPage() {
                                                 {m.notes ?? '—'}
                                             </td>
 
-                                        </tr>
+                                                {/* Bodega (solo si multi_bodega activo) */}
+                                                {isMultiBodega && (
+                                                    <td className="px-4 py-3">
+                                                        {(m as any).warehouses ? (
+                                                            <span className="flex items-center gap-1.5 text-xs font-medium">
+                                                                <Warehouse className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#468189' }} />
+                                                                <span style={{ color: '#031926' }}>{(m as any).warehouses.name}</span>
+                                                                <span className="font-mono" style={{ color: '#9DBEBB' }}>{(m as any).warehouses.code}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ color: '#ccc' }}>—</span>
+                                                        )}
+                                                    </td>
+                                                )}
+
+                                            </tr>
                                     )
                                 })}
                             </tbody>
@@ -431,7 +460,37 @@ export default function MovimientosPage() {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
 
-                            {/* Datos del documento */}
+                            {/* Selector de Bodega (solo si multi_bodega activo) */}
+                            {isMultiBodega && (
+                                <div className="rounded-lg p-4"
+                                    style={{ background: 'rgba(68,129,137,0.05)', border: '1px solid rgba(68,129,137,0.2)' }}>
+                                    <p className="text-xs font-bold uppercase tracking-wide mb-2"
+                                        style={{ color: '#468189' }}>
+                                        <span className="flex items-center gap-1.5">
+                                            <Warehouse className="w-3.5 h-3.5" />
+                                            Bodega
+                                        </span>
+                                    </p>
+                                    <Select value={warehouseId} onValueChange={setWarehouseId}>
+                                        <SelectTrigger className="h-10">
+                                            <SelectValue placeholder="Seleccionar bodega..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {warehouses?.map(w => (
+                                                <SelectItem key={w.id} value={w.id}>
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="font-mono text-xs"
+                                                            style={{ color: '#9DBEBB' }}>{w.code}</span>
+                                                        {w.name}
+                                                        {w.is_default && <span className="text-xs" style={{ color: '#e67e22' }}>★</span>}
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
                             <div className="rounded-lg p-4"
                                 style={{ background: '#f8fafa', border: '1px solid #e0eded' }}>
                                 <p className="text-xs font-bold uppercase tracking-wide mb-3"

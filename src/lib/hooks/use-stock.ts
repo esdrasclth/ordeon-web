@@ -98,7 +98,7 @@ export function useAllMovements(filters?: {
 
       let query = supabase
         .from('stock_movements')
-        .select(`*, profiles(full_name), products(id, code, name, unit, purchase_price)`)
+        .select(`*, profiles(full_name), products(id, code, name, unit, purchase_price), warehouses(id, name, code)`)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(200)
@@ -125,6 +125,7 @@ export function useAdjustStockBatch() {
       supplier?:  string
       reason?:    string
       notes?:     string
+      warehouse_id?: string
     }) => {
       const { error } = await supabase.rpc('adjust_stock_batch', {
         p_movements: params.movements,
@@ -135,6 +136,26 @@ export function useAdjustStockBatch() {
         p_notes:     params.notes     ?? null,
       })
       if (error) throw error
+
+      // Si hay warehouse_id, insertar/actualizar en warehouse_stock
+      if (params.warehouse_id) {
+        for (const mov of params.movements) {
+          await supabase.rpc('upsert_warehouse_stock', {
+            p_warehouse_id: params.warehouse_id,
+            p_product_id:   mov.product_id,
+            p_quantity:     mov.quantity,
+            p_type:         params.type,
+          }).then(({ error }) => { if (error) console.warn('warehouse_stock error:', error) })
+        }
+        // Registrar warehouse_id en el último movimiento insertado (best-effort)
+        await supabase
+          .from('stock_movements')
+          .update({ warehouse_id: params.warehouse_id })
+          .is('warehouse_id', null)
+          .in('product_id', params.movements.map(m => m.product_id))
+          .order('created_at', { ascending: false })
+          .limit(params.movements.length)
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
@@ -143,6 +164,7 @@ export function useAdjustStockBatch() {
     },
   })
 }
+
 
 export function useInventoryOverview() {
   return useQuery({
