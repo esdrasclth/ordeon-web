@@ -57,10 +57,12 @@ export default function ProductDetailPage() {
     }
     try {
       await adjustStock.mutateAsync({
-        product_id: id,
-        quantity:   qty,
-        type:       adjustType,
-        notes:      adjustNotes || undefined,
+        product_id:   id,
+        quantity:     qty,
+        type:         adjustType,
+        notes:        adjustNotes || undefined,
+        unit_cost:    product?.purchase_price ?? 0,
+        product_name: product?.name,
       })
       toast.success('Stock actualizado correctamente')
       setShowAdjust(false)

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { Plus, Trash2, ArrowLeft, ShoppingCart, Package } from 'lucide-react'
+import { tryCreateJournalEntry, buildInvoiceJournalEntry } from '@/lib/accounting-integration'
 
 const supabase = createClient()
 
@@ -140,7 +141,7 @@ export function NewInvoicePage({
 
     setLoading(true)
 
-    const { error } = await supabase.rpc('create_invoice', {
+    const { data: invoiceData, error } = await supabase.rpc('create_invoice', {
       p_client_id:      selectedClient.id,
       p_issued_at:      issuedAt,
       p_notes:          notes || null,
@@ -154,6 +155,20 @@ export function NewInvoicePage({
       setLoading(false)
       return
     }
+
+    // Asiento contable automático (best-effort)
+    const invoiceNumber = `${config.range_from.split('-').slice(0, 3).join('-')}-${String(config.current_correlative).padStart(8, '0')}`
+    await tryCreateJournalEntry(
+      buildInvoiceJournalEntry({
+        invoiceId:     typeof invoiceData === 'string' ? invoiceData : (invoiceData as any)?.id ?? '',
+        invoiceNumber,
+        date:         issuedAt,
+        clientName:   selectedClient.name,
+        subtotal:     totals.subtotal,
+        isvAmount:    totals.isv,
+        total:        totals.total,
+      })
+    )
 
     toast.success('Factura emitida exitosamente')
     router.push('/dashboard/facturacion')

@@ -3,6 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { StockMovement } from '@/types'
+import {
+  tryCreateJournalEntry,
+  buildStockEntryJournalEntry,
+  buildStockExitJournalEntry,
+} from '@/lib/accounting-integration'
 
 const supabase = createClient()
 
@@ -62,12 +67,14 @@ export function useAdjustStock() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
-      product_id, quantity, type, notes
+      product_id, quantity, type, notes, unit_cost, product_name,
     }: {
-      product_id: string
-      quantity:   number
-      type:       string
-      notes?:     string
+      product_id:    string
+      quantity:      number
+      type:          string
+      notes?:        string
+      unit_cost?:    number
+      product_name?: string
     }) => {
       const { error } = await supabase.rpc('adjust_stock', {
         p_product_id: product_id,
@@ -76,11 +83,24 @@ export function useAdjustStock() {
         p_notes:      notes ?? null,
       })
       if (error) throw error
+
+      // Asiento contable automático (best-effort)
+      const today = new Date().toISOString().split('T')[0]
+      const cost  = unit_cost ?? 0
+      const name  = product_name ?? 'Producto'
+      if (cost > 0) {
+        const isEntry = type === 'entrada' || type === 'compra'
+        const payload = isEntry
+          ? buildStockEntryJournalEntry({ date: today, productName: name, quantity, unitCost: cost, reference: notes })
+          : buildStockExitJournalEntry ({ date: today, productName: name, quantity, unitCost: cost, reference: notes })
+        await tryCreateJournalEntry(payload)
+      }
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', vars.product_id] })
       queryClient.invalidateQueries({ queryKey: ['stock-movements', vars.product_id] })
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] })
     },
   })
 }
@@ -119,12 +139,12 @@ export function useAdjustStockBatch() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (params: {
-      movements: { product_id: string; quantity: number }[]
-      type:       string
-      reference?: string
-      supplier?:  string
-      reason?:    string
-      notes?:     string
+      movements:    { product_id: string; quantity: number; product_name?: string; unit_cost?: number }[]
+      type:         string
+      reference?:   string
+      supplier?:    string
+      reason?:      string
+      notes?:       string
       warehouse_id?: string
     }) => {
       const { error } = await supabase.rpc('adjust_stock_batch', {
@@ -156,11 +176,25 @@ export function useAdjustStockBatch() {
           .order('created_at', { ascending: false })
           .limit(params.movements.length)
       }
+
+      // Asientos contables automáticos por producto (best-effort)
+      const today    = new Date().toISOString().split('T')[0]
+      const isEntry  = params.type === 'entrada' || params.type === 'compra'
+      for (const mov of params.movements) {
+        const cost = mov.unit_cost ?? 0
+        if (cost <= 0) continue
+        const name    = mov.product_name ?? 'Producto'
+        const payload = isEntry
+          ? buildStockEntryJournalEntry({ date: today, productName: name, quantity: mov.quantity, unitCost: cost, reference: params.reference })
+          : buildStockExitJournalEntry ({ date: today, productName: name, quantity: mov.quantity, unitCost: cost, reference: params.reference })
+        await tryCreateJournalEntry(payload)
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['movements'] })
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] })
     },
   })
 }

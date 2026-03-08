@@ -154,3 +154,28 @@ export function useUpdateOrderStatus() {
     },
   })
 }
+
+export function useDispatchOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (params: {
+      order_id: string
+      items: { item_id: string; dispatched_qty: number }[]
+      notes?: string
+    }) => {
+      const { error } = await supabase.rpc('dispatch_order', {
+        p_order_id: params.order_id,
+        p_items:    params.items,
+        p_notes:    params.notes ?? null,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['order'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['low-stock'] })
+    },
+  })
+}

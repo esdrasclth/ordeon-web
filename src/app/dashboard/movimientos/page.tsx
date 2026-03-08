@@ -124,10 +124,15 @@ export default function MovimientosPage() {
 
         try {
             await adjustBatch.mutateAsync({
-                movements: validLines.map(l => ({
-                    product_id: l.product_id,
-                    quantity: Number(l.quantity),
-                })),
+                movements: validLines.map(l => {
+                    const prod = products?.find(p => p.id === l.product_id)
+                    return {
+                        product_id:   l.product_id,
+                        quantity:     Number(l.quantity),
+                        product_name: prod?.name,
+                        unit_cost:    prod?.purchase_price ?? 0,
+                    }
+                }),
                 type: modalType,
                 reference: reference || undefined,
                 supplier: supplier || undefined,

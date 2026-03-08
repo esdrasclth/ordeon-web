@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useOrder, useUpdateOrderStatus } from '@/lib/hooks/use-orders'
+import { useOrder, useUpdateOrderStatus, useDispatchOrder } from '@/lib/hooks/use-orders'
 import { OrderStatusBadge, STATUS_CONFIG } from '@/components/orders/order-status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog'
-import { ArrowLeft, Loader2, MapPin, Phone, Hash, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Loader2, MapPin, Phone, Hash, AlertCircle, AlertTriangle, Package } from 'lucide-react'
 import { OrderStatus } from '@/types'
 import { toast } from 'sonner'
 import { usePermissions, useCurrentUser } from '@/lib/hooks/use-current-user'
@@ -28,6 +28,197 @@ const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus; label: str
 const fmt = (n: number) =>
   `L. ${Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
+// ── Tipos internos ────────────────────────────────────────────────────────────
+
+interface DispatchLine {
+  item_id:      string
+  product_name: string
+  product_code: string
+  unit:         string
+  ordered_qty:  number
+  dispatch_qty: number
+}
+
+// ── Modal de despacho con cantidades ─────────────────────────────────────────
+
+function DispatchModal({
+  open, onOpenChange, items, orderId, onSuccess,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  items: any[]
+  orderId: string
+  onSuccess: () => void
+}) {
+  const dispatchOrder = useDispatchOrder()
+  const [lines, setLines] = useState<DispatchLine[]>([])
+  const [notes, setNotes] = useState('')
+
+  // Inicializar líneas cada vez que el modal se abre
+  useEffect(() => {
+    if (open) {
+      setLines(items.map(item => ({
+        item_id:      item.id,
+        product_name: item.products?.name ?? '—',
+        product_code: item.products?.code ?? '—',
+        unit:         item.products?.unit ?? '',
+        ordered_qty:  Number(item.quantity),
+        dispatch_qty: Number(item.quantity),   // pre-fill = cantidad pedida
+      })))
+      setNotes('')
+    }
+  }, [open, items])
+
+  const setQty = (item_id: string, val: string) => {
+    const num = parseFloat(val)
+    setLines(prev => prev.map(l =>
+      l.item_id === item_id
+        ? { ...l, dispatch_qty: isNaN(num) ? 0 : Math.min(Math.max(0, num), l.ordered_qty) }
+        : l
+    ))
+  }
+
+  const hasPartial = lines.some(l => l.dispatch_qty < l.ordered_qty)
+  const allEmpty   = lines.every(l => l.dispatch_qty === 0)
+
+  const handleConfirm = async () => {
+    try {
+      await dispatchOrder.mutateAsync({
+        order_id: orderId,
+        items: lines.map(l => ({ item_id: l.item_id, dispatched_qty: l.dispatch_qty })),
+        notes: notes || undefined,
+      })
+      toast.success('Orden despachada correctamente')
+      onOpenChange(false)
+      onSuccess()
+    } catch {
+      toast.error('Error al registrar el despacho')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+            Confirmar Despacho
+          </DialogTitle>
+        </DialogHeader>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 4 }}>
+
+          {/* Aviso de despacho parcial */}
+          {hasPartial && (
+            <div className="flex items-start gap-3 p-3 rounded-xl"
+              style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#e67e22' }} />
+              <p className="text-xs" style={{ color: '#92400e' }}>
+                Estás despachando menos unidades de las pedidas en algunos artículos.
+                El stock reservado no despachado será liberado automáticamente.
+              </p>
+            </div>
+          )}
+
+          {/* Tabla de cantidades */}
+          <div className="rounded-xl overflow-hidden"
+            style={{ border: '1px solid rgba(68,129,137,0.15)' }}>
+            <div className="px-4 py-3" style={{ background: '#031926' }}>
+              <p className="text-xs font-bold" style={{ color: '#F4E9CD' }}>
+                Cantidad a Despachar por Artículo
+              </p>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: '#f8fafa', borderBottom: '1px solid #eee' }}>
+                  {['Código', 'Producto', 'Pedido', 'A Despachar'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left"
+                      style={{ fontSize: 11, color: '#9DBEBB', fontWeight: 700 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((l, i) => {
+                  const isPartial = l.dispatch_qty < l.ordered_qty
+                  return (
+                    <tr key={l.item_id}
+                      style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ color: '#9DBEBB' }}>
+                        {l.product_code}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm font-semibold" style={{ color: '#031926' }}>{l.product_name}</p>
+                        <p className="text-xs" style={{ color: '#9DBEBB' }}>{l.unit}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm font-medium" style={{ color: '#555' }}>
+                          {l.ordered_qty}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={l.ordered_qty}
+                            step="1"
+                            value={l.dispatch_qty}
+                            onChange={e => setQty(l.item_id, e.target.value)}
+                            className="h-9 w-24 text-center font-bold"
+                            style={{
+                              borderColor: isPartial ? '#f59e0b' : 'rgba(68,129,137,0.3)',
+                              color: isPartial ? '#e67e22' : '#031926',
+                            }}
+                          />
+                          {isPartial && (
+                            <span className="text-xs font-semibold" style={{ color: '#e67e22' }}>
+                              −{l.ordered_qty - l.dispatch_qty} {l.unit}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Notas */}
+          <div>
+            <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
+              Notas del despacho (opcional)
+            </Label>
+            <Textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Observaciones, número de guía, transportista..."
+              className="mt-1.5 resize-none"
+              rows={2}
+            />
+          </div>
+
+          {/* Acciones */}
+          <div className="flex justify-end gap-3 pt-1">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={dispatchOrder.isPending || allEmpty}
+              style={{ background: '#16a085', color: '#fff' }}
+            >
+              {dispatchOrder.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {hasPartial ? 'Confirmar Despacho Parcial' : 'Confirmar Despacho'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────
+
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -36,12 +227,13 @@ export default function OrderDetailPage() {
   const { actions, role } = usePermissions()
   const { data: settings } = useSettings()
 
-  const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showCancelModal, setShowCancelModal] = useState(false)
-  const [statusNotes, setStatusNotes] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [showStatusModal,   setShowStatusModal]   = useState(false)
+  const [showCancelModal,   setShowCancelModal]   = useState(false)
+  const [showDispatchModal, setShowDispatchModal] = useState(false)
+  const [statusNotes,       setStatusNotes]       = useState('')
+  const [invoiceNumber,     setInvoiceNumber]     = useState('')
   const [showApprovalModal, setShowApprovalModal] = useState(false)
-  const [approvalAction, setApprovalAction] = useState<'aprobar' | 'rechazar'>('aprobar')
+  const [approvalAction,    setApprovalAction]    = useState<'aprobar' | 'rechazar'>('aprobar')
 
   const { data: currentUser, isLoading: userLoading } = useCurrentUser()
 
@@ -61,7 +253,6 @@ export default function OrderDetailPage() {
     )
   }
 
-  // ← Agregar aquí, después de tener order y user cargados
   const userRole = currentUser?.role ?? 'vendedor'
   if (
     order.status === 'pendiente_aprobacion' &&
@@ -74,6 +265,7 @@ export default function OrderDetailPage() {
   }
 
   const nextAction = order ? NEXT_STATUS[order.status as OrderStatus] : null
+  const isDispatchAction = nextAction?.status === 'despachada'
 
   const handleStatusChange = async () => {
     if (!order || !nextAction) return
@@ -124,26 +316,6 @@ export default function OrderDetailPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#468189' }} />
-      </div>
-    )
-  }
-
-  if (!order) {
-    return (
-      <div className="text-center py-20" style={{ color: '#9DBEBB' }}>
-        <p>Orden no encontrada</p>
-      </div>
-    )
-  }
-
-  console.log('currentUser:', currentUser)
-  console.log('userLoading:', userLoading)
-  console.log('order.status:', order?.status)
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
@@ -169,7 +341,6 @@ export default function OrderDetailPage() {
 
         {/* Acciones */}
         <div className="flex gap-3">
-          {/* Botón PDF */}
           {order && settings && (
             <PdfDownloadButton order={order} settings={settings} />
           )}
@@ -189,8 +360,10 @@ export default function OrderDetailPage() {
             if (role === 'almacen' && nextAction.status === 'facturada') return null
             if (role === 'vendedor') return null
             return (
-              <Button onClick={() => setShowStatusModal(true)}
-                style={{ background: nextAction.color, color: '#fff' }}>
+              <Button
+                onClick={() => isDispatchAction ? setShowDispatchModal(true) : setShowStatusModal(true)}
+                style={{ background: nextAction.color, color: '#fff' }}
+              >
                 {nextAction.label}
               </Button>
             )
@@ -253,7 +426,7 @@ export default function OrderDetailPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ background: '#f8fafa', borderBottom: '1px solid #eee' }}>
-                  {['Código', 'Producto', 'Cant.', 'Precio c/ISV', 'Precio s/ISV', 'ISV', 'Desc.', 'Total'].map(h => (
+                  {['Código', 'Producto', 'Pedido', 'Despachado', 'Precio c/ISV', 'Precio s/ISV', 'ISV', 'Desc.', 'Total'].map(h => (
                     <th key={h} className="px-4 py-3 text-left"
                       style={{ fontSize: 11, color: '#9DBEBB', fontWeight: 700, letterSpacing: '0.04em' }}>
                       {h}
@@ -262,30 +435,50 @@ export default function OrderDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {order.sales_order_items?.map((item: any, i: number) => (
-                  <tr key={item.id}
-                    style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
-                    <td className="px-4 py-4 font-mono text-xs" style={{ color: '#9DBEBB' }}>
-                      {item.products?.code}
-                    </td>
-                    <td className="px-4 py-4">
-                      <p className="text-sm font-semibold" style={{ color: '#031926' }}>{item.products?.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#9DBEBB' }}>{item.products?.unit}</p>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-center font-medium" style={{ color: '#555' }}>
-                      {item.quantity}
-                    </td>
-                    <td className="px-4 py-4 text-sm" style={{ color: '#555' }}>{fmt(item.unit_price)}</td>
-                    <td className="px-4 py-4 text-sm" style={{ color: '#555' }}>{fmt(item.unit_price_base)}</td>
-                    <td className="px-4 py-4 text-sm" style={{ color: '#555' }}>{fmt(item.isv_amount)}</td>
-                    <td className="px-4 py-4 text-sm" style={{ color: '#27ae60' }}>
-                      {item.discount_pct > 0 ? `-${item.discount_pct}%` : '—'}
-                    </td>
-                    <td className="px-4 py-4 text-sm font-bold" style={{ color: '#031926' }}>
-                      {fmt(item.line_total)}
-                    </td>
-                  </tr>
-                ))}
+                {order.sales_order_items?.map((item: any, i: number) => {
+                  const hasDispatch = item.dispatched_quantity != null
+                  const isPartial   = hasDispatch && Number(item.dispatched_quantity) < Number(item.quantity)
+                  return (
+                    <tr key={item.id}
+                      style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="px-4 py-4 font-mono text-xs" style={{ color: '#9DBEBB' }}>
+                        {item.products?.code}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm font-semibold" style={{ color: '#031926' }}>{item.products?.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#9DBEBB' }}>{item.products?.unit}</p>
+                      </td>
+                      {/* Cantidad pedida */}
+                      <td className="px-4 py-4 text-sm text-center font-medium" style={{ color: '#555' }}>
+                        {item.quantity}
+                      </td>
+                      {/* Cantidad despachada */}
+                      <td className="px-4 py-4 text-sm text-center font-bold">
+                        {hasDispatch ? (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span style={{ color: isPartial ? '#e67e22' : '#27ae60' }}>
+                              {item.dispatched_quantity}
+                            </span>
+                            {isPartial && (
+                              <Package className="w-3.5 h-3.5" style={{ color: '#e67e22' }} />
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#9DBEBB' }}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-sm" style={{ color: '#555' }}>{fmt(item.unit_price)}</td>
+                      <td className="px-4 py-4 text-sm" style={{ color: '#555' }}>{fmt(item.unit_price_base)}</td>
+                      <td className="px-4 py-4 text-sm" style={{ color: '#555' }}>{fmt(item.isv_amount)}</td>
+                      <td className="px-4 py-4 text-sm" style={{ color: '#27ae60' }}>
+                        {item.discount_pct > 0 ? `-${item.discount_pct}%` : '—'}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-bold" style={{ color: '#031926' }}>
+                        {fmt(item.line_total)}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
 
@@ -434,7 +627,16 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Modal cambio de estado */}
+      {/* ── Modal de despacho con cantidades ── */}
+      <DispatchModal
+        open={showDispatchModal}
+        onOpenChange={setShowDispatchModal}
+        items={order.sales_order_items ?? []}
+        orderId={order.id}
+        onSuccess={() => {}}
+      />
+
+      {/* ── Modal genérico para otros estados ── */}
       <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
