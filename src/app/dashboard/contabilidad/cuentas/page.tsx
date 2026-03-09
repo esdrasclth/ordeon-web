@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '@/lib/hooks/use-accounts'
+import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount, useInitializeAccounts } from '@/lib/hooks/use-accounts'
 import { Account, AccountType } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Pencil, Trash2, Loader2, BookOpen, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, BookOpen, Search, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 const TYPE_CONFIG: Record<AccountType, { label: string; color: string }> = {
@@ -26,9 +26,20 @@ const BLANK = { code: '', name: '', type: 'activo' as AccountType, parent_id: nu
 
 export default function CuentasPage() {
   const { data: accounts, isLoading } = useAccounts()
-  const create  = useCreateAccount()
-  const update  = useUpdateAccount()
-  const remove  = useDeleteAccount()
+  const create      = useCreateAccount()
+  const update      = useUpdateAccount()
+  const remove      = useDeleteAccount()
+  const initialize  = useInitializeAccounts()
+
+  const handleInitialize = async () => {
+    if (!confirm('¿Inicializar el plan de cuentas estándar para Honduras? Se agregarán ~80 cuentas contables.')) return
+    try {
+      await initialize.mutateAsync()
+      toast.success('Plan de cuentas estándar inicializado correctamente')
+    } catch (e: any) {
+      toast.error(e.message ?? 'Error al inicializar el plan de cuentas')
+    }
+  }
 
   const [open, setOpen]         = useState(false)
   const [editing, setEditing]   = useState<Account | null>(null)
@@ -134,7 +145,15 @@ export default function CuentasPage() {
         <div className="rounded-xl p-12 text-center" style={{ border: '1px solid #eee', color: '#9DBEBB' }}>
           <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">Sin cuentas</p>
-          <p className="text-sm mt-1">Crea tu primera cuenta o activa el plan de cuentas estándar</p>
+          <p className="text-sm mt-1 mb-4">Crea tu primera cuenta o inicializa el plan de cuentas estándar</p>
+          <Button onClick={handleInitialize} disabled={initialize.isPending}
+            className="flex items-center gap-2 mx-auto"
+            style={{ background: '#468189', color: '#F4E9CD' }}>
+            {initialize.isPending
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Sparkles className="w-4 h-4" />}
+            {initialize.isPending ? 'Inicializando...' : 'Inicializar Plan Estándar Honduras'}
+          </Button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
