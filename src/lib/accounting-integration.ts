@@ -33,7 +33,7 @@ export type JournalEntryPayload = {
   date: string
   description: string
   reference?: string
-  source: 'factura' | 'ajuste_stock' | 'venta' | 'devolucion'
+  source: 'factura' | 'ajuste_stock' | 'venta' | 'devolucion' | 'pago'
   source_id?: string
   lines: JournalLinePayload[]
 }
@@ -337,6 +337,43 @@ export function buildStockExitJournalEntry(params: {
         debit:        0,
         credit:       amount,
         description:  `Baja inventario ${productName}`,
+      },
+    ],
+  }
+}
+
+/**
+ * Asiento para cobro de factura a crédito:
+ *   Déb: Bancos / Caja  (1103-01)
+ *   Créd: Cuentas por Cobrar (1104)
+ */
+export function buildPaymentJournalEntry(params: {
+  paymentId: string
+  invoiceNumber: string
+  date: string
+  clientName: string
+  amount: number
+  paymentMethod: string
+}): JournalEntryPayload {
+  const { paymentId, invoiceNumber, date, clientName, amount, paymentMethod } = params
+  return {
+    date,
+    description: `Cobro factura ${invoiceNumber} — ${clientName} (${paymentMethod})`,
+    reference:   invoiceNumber,
+    source:      'pago',
+    source_id:   paymentId,
+    lines: [
+      {
+        account_code: '1103-01',
+        debit:        round2(amount),
+        credit:       0,
+        description:  `Cobro ${paymentMethod} — ${clientName}`,
+      },
+      {
+        account_code: '1104',
+        debit:        0,
+        credit:       round2(amount),
+        description:  `Cancelación CxC factura ${invoiceNumber}`,
       },
     ],
   }
