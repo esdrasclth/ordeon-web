@@ -42,6 +42,7 @@ export function EmpresaForm({
 
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
   const [createdCompanyId, setCreatedCompanyId] = useState<string | null>(
     isEditing ? company.id : null
   )
@@ -148,6 +149,7 @@ export function EmpresaForm({
       return
     }
 
+    setEmailSent(data.emailSent === true)
     toast.success('Usuario admin creado exitosamente')
     setStep(3)
     setLoading(false)
@@ -434,6 +436,23 @@ export function EmpresaForm({
                 <p className="text-xs mt-2" style={{ color: '#9DBEBB' }}>
                   Comparte estas credenciales con el administrador de la empresa.
                 </p>
+                {emailSent ? (
+                  <div className="mt-3 flex items-center gap-2 p-2 rounded-lg"
+                    style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
+                    <span style={{ color: '#16a34a', fontSize: 14 }}>✉️</span>
+                    <p className="text-xs font-semibold" style={{ color: '#16a34a' }}>
+                      Correo con credenciales enviado a {adminForm.email}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-2 p-2 rounded-lg"
+                    style={{ background: '#fefce8', border: '1px solid #fde047' }}>
+                    <span style={{ fontSize: 14 }}>⚠️</span>
+                    <p className="text-xs" style={{ color: '#854d0e' }}>
+                      No se pudo enviar el correo automático. Comparte las credenciales manualmente.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             <Button onClick={onClose} className="mt-6"
