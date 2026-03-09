@@ -19,28 +19,25 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  // Si el superadmin no tiene empresa asignada → siempre va al panel de superadmin
-  if (profile?.is_superadmin && !profile?.company_id) {
-    redirect('/superadmin')
-  }
+  // Sin perfil (ej: perfil eliminado accidentalmente) → reiniciar sesión
+  if (!profile) redirect('/login')
 
-  // Si la empresa está inactiva y no es superadmin → pantalla suspendida
-  const company = (profile?.companies as any)
-  if (!profile?.is_superadmin && company && !company.active) {
-    redirect('/suspendida')
-  }
+  // Superadmin: siempre va al panel de superadmin, sin importar si tiene empresa o no
+  if (profile.is_superadmin) redirect('/superadmin')
 
-  // Si no tiene empresa asignada y no es superadmin → error
-  if (!profile?.is_superadmin && !profile?.company_id) {
-    redirect('/sin-empresa')
-  }
+  // Empresa inactiva → pantalla suspendida
+  const company = (profile.companies as any)
+  if (company && !company.active) redirect('/suspendida')
+
+  // Sin empresa asignada → error
+  if (!profile.company_id) redirect('/sin-empresa')
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f5f7f7' }}>
       <Sidebar
-        userName={profile?.full_name ?? user.email ?? 'Usuario'}
-        userRole={(profile?.role ?? 'vendedor') as UserRole}
-        isSuperAdmin={profile?.is_superadmin ?? false}
+        userName={profile.full_name ?? user.email ?? 'Usuario'}
+        userRole={(profile.role ?? 'vendedor') as UserRole}
+        isSuperAdmin={false}
         companyName={company?.name ?? ''}
         modules={company?.modules ?? ['core']}
       />

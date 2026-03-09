@@ -360,7 +360,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
         <DeleteCompanyModal
           company={deletingCompany}
           onClose={() => setDeletingCompany(null)}
-          onDeleted={() => { setDeletingCompany(null); router.refresh() }}
+          onDeleted={() => { setDeletingCompany(null); router.push('/superadmin/empresas') }}
         />
       )}
     </div>
