@@ -271,7 +271,72 @@ export function useRecentJournalEntries(enabled = true) {
   })
 }
 
+// ─── Compras ───────────────────────────────────────────────────────────────────
+
+export function useComprasKpis(period: string, enabled = true) {
+  const { start, end } = getPeriodDates(period)
+  return useQuery({
+    queryKey: ['compras-kpis', period],
+    enabled,
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+      const { data: profile } = await supabase
+        .from('profiles').select('company_id').eq('id', user.id).single()
+      if (!profile?.company_id) return null
+
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select('id, status, total, order_date')
+        .eq('company_id', profile.company_id)
+        .gte('order_date', start.split('T')[0])
+        .lte('order_date', end.split('T')[0])
+      if (error) { console.warn('[useComprasKpis]', error); return null }
+
+      const rows = data ?? []
+      const total_oc       = rows.length
+      const total_comprado = rows.filter(r => r.status !== 'cancelada').reduce((s, r) => s + Number(r.total), 0)
+      const pendientes     = rows.filter(r => r.status === 'enviada').length
+      const en_proceso     = rows.filter(r => r.status === 'borrador' || r.status === 'recibida_parcial').length
+
+      return { total_oc, total_comprado, pendientes, en_proceso }
+    },
+  })
+}
+
+export function useRecentPurchaseOrders(enabled = true) {
+  return useQuery({
+    queryKey: ['recent-purchase-orders'],
+    enabled,
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+      const { data: profile } = await supabase
+        .from('profiles').select('company_id').eq('id', user.id).single()
+      if (!profile?.company_id) return []
+
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select('id, po_number, status, total, order_date, suppliers(name)')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (error) { console.warn('[useRecentPurchaseOrders]', error); return [] }
+
+      return (data ?? []).map(r => ({
+        id:            r.id,
+        po_number:     r.po_number,
+        status:        r.status,
+        total:         r.total,
+        order_date:    r.order_date,
+        supplier_name: (r as any).suppliers?.name ?? '—',
+      }))
+    },
+  })
+}
+
 // ─── Multi-Bodega ──────────────────────────────────────────────────────────────
+
 
 export function useWarehouseStockSummary(enabled = true) {
   return useQuery({

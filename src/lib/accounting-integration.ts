@@ -33,7 +33,7 @@ export type JournalEntryPayload = {
   date: string
   description: string
   reference?: string
-  source: 'factura' | 'ajuste_stock' | 'venta' | 'devolucion' | 'pago'
+  source: 'factura' | 'ajuste_stock' | 'venta' | 'devolucion' | 'pago' | 'compra' | 'pago_proveedor'
   source_id?: string
   lines: JournalLinePayload[]
 }
@@ -337,6 +337,79 @@ export function buildStockExitJournalEntry(params: {
         debit:        0,
         credit:       amount,
         description:  `Baja inventario ${productName}`,
+      },
+    ],
+  }
+}
+
+/**
+ * Asiento para Orden de Compra emitida / recibida:
+ *   Déb: Inventario (1104)
+ *   Créd: Cuentas por Pagar Proveedores (2101)
+ */
+export function buildPurchaseOrderJournalEntry(params: {
+  poId: string
+  poNumber: string
+  date: string
+  supplierName: string
+  total: number
+}): JournalEntryPayload {
+  const { poId, poNumber, date, supplierName, total } = params
+  return {
+    date,
+    description: `Compra OC ${poNumber} — ${supplierName}`,
+    reference:   poNumber,
+    source:      'compra',
+    source_id:   poId,
+    lines: [
+      {
+        account_code: '1104',
+        debit:        round2(total),
+        credit:       0,
+        description:  `Entrada inventario OC ${poNumber}`,
+      },
+      {
+        account_code: '2101',
+        debit:        0,
+        credit:       round2(total),
+        description:  `CxP ${supplierName} — OC ${poNumber}`,
+      },
+    ],
+  }
+}
+
+/**
+ * Asiento para Pago a Proveedor:
+ *   Déb: Cuentas por Pagar Proveedores (2101)
+ *   Créd: Bancos / Caja (1103-01)
+ */
+export function buildSupplierPaymentJournalEntry(params: {
+  paymentId: string
+  poNumber?: string
+  date: string
+  supplierName: string
+  amount: number
+  paymentMethod: string
+}): JournalEntryPayload {
+  const { paymentId, poNumber, date, supplierName, amount, paymentMethod } = params
+  return {
+    date,
+    description: `Pago proveedor ${supplierName}${poNumber ? ` — OC ${poNumber}` : ''} (${paymentMethod})`,
+    reference:   poNumber,
+    source:      'pago_proveedor',
+    source_id:   paymentId,
+    lines: [
+      {
+        account_code: '2101',
+        debit:        round2(amount),
+        credit:       0,
+        description:  `Pago ${paymentMethod} a ${supplierName}`,
+      },
+      {
+        account_code: '1103-01',
+        debit:        0,
+        credit:       round2(amount),
+        description:  `Salida banco — pago ${supplierName}`,
       },
     ],
   }

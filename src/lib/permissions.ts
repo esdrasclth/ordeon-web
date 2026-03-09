@@ -26,6 +26,9 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard/contabilidad/resultados',
     '/dashboard/contabilidad/periodos',
     '/dashboard/contabilidad/impuestos',
+    '/dashboard/compras',
+    '/dashboard/compras/nueva',
+    '/dashboard/compras/proveedores',
   ],
   supervisor: [
     '/dashboard',
@@ -74,6 +77,8 @@ export const MODULE_ROUTES: Record<string, string[]> = {
   ],
   compras: [
     '/dashboard/compras',
+    '/dashboard/compras/nueva',
+    '/dashboard/compras/proveedores',
   ],
   facturacion: [
     '/dashboard/facturacion',

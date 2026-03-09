@@ -6,7 +6,7 @@ import {
   useTopClients, useSalesByVendor, useOrdersByStatus,
   useLowStockProducts, useOverCreditClients,
   useInvoiceStats, useAccountingKpis, useRecentJournalEntries,
-  useWarehouseStockSummary,
+  useWarehouseStockSummary, useComprasKpis, useRecentPurchaseOrders,
 } from '@/lib/hooks/use-dashboard'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -17,7 +17,7 @@ import {
   TrendingUp, ShoppingCart, Clock, TrendingDown,
   Package, CreditCard, AlertTriangle, ArrowRight,
   FileText, BookOpen, Warehouse, DollarSign, BarChart2,
-  Sparkles, AlertCircle,
+  Sparkles, AlertCircle, Truck, Building2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePermissions, useModules } from '@/lib/hooks/use-current-user'
@@ -265,6 +265,7 @@ export default function DashboardPage() {
   const hasFacturacion  = hasModule('facturacion')
   const hasContabilidad = hasModule('contabilidad')
   const hasMultiBodega  = hasModule('multi_bodega')
+  const hasCompras      = hasModule('compras')
 
   const { data: kpis,         isLoading: kpisLoading      } = useDashboardKpis(period)
   const { data: trend,        isLoading: trendLoading      } = useSalesTrend()
@@ -278,13 +279,15 @@ export default function DashboardPage() {
   const { data: acctKpis,     isLoading: acctKpisLoading   } = useAccountingKpis(period, hasContabilidad)
   const { data: recentEntries,isLoading: entriesLoading    } = useRecentJournalEntries(  hasContabilidad)
   const { data: warehouseSummary, isLoading: warehouseLoading } = useWarehouseStockSummary(hasMultiBodega)
+  const { data: comprasKpis,  isLoading: comprasKpisLoading } = useComprasKpis(period,  hasCompras)
+  const { data: recentPOs,    isLoading: recentPOsLoading  } = useRecentPurchaseOrders( hasCompras)
 
   const periodLabel = PERIODS.find(p => p.value === period)?.label ?? ''
   const now = new Date().toLocaleDateString('es-HN', { weekday: 'long', day: 'numeric', month: 'long' })
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
 
-  const hasAnyOptionalModule = hasVentas || hasClientes || hasFacturacion || hasContabilidad || hasMultiBodega
+  const hasAnyOptionalModule = hasVentas || hasClientes || hasFacturacion || hasContabilidad || hasMultiBodega || hasCompras
 
   const alertCount = (lowStock?.length ?? 0) + (overCredit?.length ?? 0)
 
@@ -567,6 +570,88 @@ export default function DashboardPage() {
             ) : <EmptyState text="Sin datos de vendedores en el período" />}
           </SectionCard>
         </div>
+      )}
+
+      {/* ── MÓDULO: COMPRAS ── */}
+      {hasCompras && (
+        <>
+          <ModuleDivider />
+          <div className="space-y-4">
+            <ModuleSectionHeader
+              icon={<Truck className="w-4 h-4" />}
+              title="Compras"
+              color="#0d6e8a"
+              action={<ModuleBadge label="Ver órdenes" href="/dashboard/compras" />}
+            />
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              <KpiCard label="Total Comprado" value={fmt(comprasKpis?.total_comprado ?? 0)} sub={periodLabel}
+                icon={<Truck className="w-4 h-4" />} color="#0d6e8a" loading={comprasKpisLoading} href="/dashboard/compras" />
+              <KpiCard label="Órdenes de Compra" value={String(comprasKpis?.total_oc ?? 0)} sub={periodLabel}
+                icon={<ShoppingCart className="w-4 h-4" />} color="#468189" loading={comprasKpisLoading} href="/dashboard/compras" />
+              <KpiCard label="Enviadas al Proveedor" value={String(comprasKpis?.pendientes ?? 0)} sub="esperando recepción"
+                icon={<Clock className="w-4 h-4" />}
+                color={(comprasKpis?.pendientes ?? 0) > 0 ? '#e67e22' : '#27ae60'}
+                loading={comprasKpisLoading} href="/dashboard/compras" />
+              <KpiCard label="En Proceso" value={String(comprasKpis?.en_proceso ?? 0)} sub="borrador o parcial"
+                icon={<Package className="w-4 h-4" />} color="#9b59b6" loading={comprasKpisLoading} href="/dashboard/compras" />
+            </div>
+
+            <SectionCard title="Órdenes de Compra Recientes" loading={recentPOsLoading}
+              icon={<Building2 className="w-4 h-4" />}
+              action={<ModuleBadge label="Ver todas" href="/dashboard/compras" />}>
+              {recentPOs && recentPOs.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        {['OC', 'Proveedor', 'Fecha', 'Estado', 'Total'].map(h => (
+                          <th key={h} className="pb-2 text-left"
+                            style={{ fontSize: 11, color: '#9DBEBB', fontWeight: 700 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentPOs.map((po, i) => {
+                        const STATUS_PO: Record<string, { label: string; color: string }> = {
+                          borrador:         { label: 'Borrador',        color: '#94a3b8' },
+                          enviada:          { label: 'Enviada',         color: '#3b82f6' },
+                          recibida_parcial: { label: 'Rec. Parcial',    color: '#f59e0b' },
+                          recibida:         { label: 'Recibida',        color: '#22c55e' },
+                          cancelada:        { label: 'Cancelada',       color: '#ef4444' },
+                        }
+                        const sc = STATUS_PO[po.status] ?? { label: po.status, color: '#888' }
+                        return (
+                          <tr key={po.id} style={{ borderBottom: '1px solid #f8f8f8', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                            <td className="py-2 pr-3">
+                              <a href={`/dashboard/compras/${po.id}`}
+                                className="font-mono text-xs font-bold hover:underline"
+                                style={{ color: '#0d6e8a' }}>
+                                OC-{String(po.po_number).padStart(5, '0')}
+                              </a>
+                            </td>
+                            <td className="py-2 pr-3 text-xs" style={{ color: '#475569' }}>{po.supplier_name}</td>
+                            <td className="py-2 pr-3 text-xs whitespace-nowrap" style={{ color: '#777' }}>
+                              {new Date(po.order_date + 'T00:00:00').toLocaleDateString('es-HN')}
+                            </td>
+                            <td className="py-2 pr-3">
+                              <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                style={{ background: `${sc.color}18`, color: sc.color }}>
+                                {sc.label}
+                              </span>
+                            </td>
+                            <td className="py-2 text-sm font-bold" style={{ color: '#031926' }}>
+                              {fmt(Number(po.total))}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <EmptyState text="Sin órdenes de compra en el período" />}
+            </SectionCard>
+          </div>
+        </>
       )}
 
       {/* ── MÓDULO: FACTURACIÓN ── */}

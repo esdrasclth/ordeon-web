@@ -191,6 +191,108 @@ export interface Account {
   created_at: string
 }
 
+// ─── Compras ──────────────────────────────────────────────────────────────────
+
+export type PurchaseOrderStatus =
+  | 'borrador'
+  | 'enviada'
+  | 'recibida_parcial'
+  | 'recibida'
+  | 'cancelada'
+
+export interface Supplier {
+  id: string
+  company_id: string
+  code: string | null
+  name: string
+  rtn: string | null
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string | null
+  department: string | null
+  country: string
+  credit_limit: number
+  current_balance: number
+  payment_terms: string | null
+  notes: string | null
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PurchaseOrder {
+  id: string
+  company_id: string
+  po_number: number
+  supplier_id: string
+  warehouse_id: string | null
+  status: PurchaseOrderStatus
+  order_date: string
+  expected_date: string | null
+  received_date: string | null
+  payment_terms: string | null
+  subtotal: number
+  isv_amount: number
+  discount_amount: number
+  total: number
+  notes: string | null
+  created_by: string | null
+  received_by: string | null
+  created_at: string
+  updated_at: string
+  // Relaciones
+  suppliers?: { name: string; rtn: string | null }
+  purchase_order_items?: PurchaseOrderItem[]
+}
+
+export interface PurchaseOrderItem {
+  id: string
+  po_id: string
+  product_id: string
+  quantity: number
+  qty_received: number
+  unit_cost: number
+  isv_rate: number
+  isv_amount: number
+  discount_pct: number
+  discount_amount: number
+  line_total: number
+  created_at: string
+  // Relaciones
+  products?: { name: string; code: string; unit: string }
+}
+
+export interface SupplierPayment {
+  id: string
+  company_id: string
+  supplier_id: string
+  po_id: string | null
+  amount: number
+  payment_date: string
+  payment_method: 'efectivo' | 'transferencia' | 'cheque' | 'tarjeta' | 'otro'
+  reference: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  // Relaciones
+  suppliers?: { name: string }
+}
+
+export interface PurchaseOrderItemForm {
+  product_id: string
+  product_name: string
+  product_code: string
+  unit: string
+  quantity: number
+  unit_cost: number
+  isv_rate: number
+  discount_pct: number
+}
+
+// ─── Contabilidad ─────────────────────────────────────────────────────────────
+
 export type JournalEntrySource =
   | 'manual'
   | 'venta'
