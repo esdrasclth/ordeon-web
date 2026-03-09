@@ -87,7 +87,7 @@ export function NewInvoicePage({
     const orderItems = order.sales_order_items.map((oi: any) => ({
       product_id:   oi.product_id,
       description:  `${oi.products?.code ?? ''} - ${oi.products?.name ?? ''}`,
-      quantity:     Number(oi.quantity),
+      quantity:     Number(oi.dispatched_quantity ?? oi.quantity),
       unit_price:   Number(oi.unit_price),
       discount_pct: Number(oi.discount_pct ?? 0),
     }))
@@ -345,6 +345,7 @@ export function NewInvoicePage({
                                 type="number" min={0.01} step={0.01}
                                 value={item.quantity}
                                 onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
+                                onFocus={e => e.target.select()}
                                 className="w-16 text-xs px-2 py-1 rounded text-center"
                                 style={{ border: '1px solid #eee', outline: 'none' }}
                               />
@@ -353,9 +354,9 @@ export function NewInvoicePage({
                               <input
                                 type="number" min={0} step={0.01}
                                 value={item.unit_price}
-                                onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))}
+                                readOnly
                                 className="w-24 text-xs px-2 py-1 rounded"
-                                style={{ border: '1px solid #eee', outline: 'none' }}
+                                style={{ border: '1px solid #eee', outline: 'none', background: '#f9f9f9', color: '#999', cursor: 'not-allowed' }}
                               />
                             </td>
                             <td className="py-2 pr-2">

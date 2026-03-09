@@ -46,7 +46,7 @@ export default async function NuevaFacturaPage() {
   // Cargar órdenes despachadas sin facturar
   const { data: orders } = await supabase
     .from('sales_orders')
-    .select('id, order_number, client_id, total, order_date, sales_order_items(product_id, quantity, unit_price, discount_pct, line_total, products(id, code, name, unit))')
+    .select('id, order_number, client_id, total, order_date, sales_order_items(product_id, quantity, dispatched_quantity, unit_price, discount_pct, line_total, products(id, code, name, unit))')
     .eq('company_id', companyId)
     .eq('status', 'despachada')
     .is('invoice_number', null)

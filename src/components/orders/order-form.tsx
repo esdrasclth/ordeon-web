@@ -532,6 +532,7 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading, has
                         min="1"
                         value={item.quantity}
                         onChange={e => updateItem(item.product_id, 'quantity', Number(e.target.value))}
+                        onFocus={e => e.target.select()}
                         className="h-8 text-sm text-center px-1"
                       />
                     </div>
@@ -542,8 +543,9 @@ export function OrderForm({ vendorId, userRole, onSubmit, onCancel, loading, has
                         step="0.01"
                         min="0"
                         value={item.unit_price}
-                        onChange={e => updateItem(item.product_id, 'unit_price', Number(e.target.value))}
+                        readOnly
                         className="h-8 text-sm px-2"
+                        style={{ background: '#f9f9f9', color: '#999', cursor: 'not-allowed' }}
                       />
                     </div>
                     <div>
