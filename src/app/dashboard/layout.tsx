@@ -19,6 +19,11 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
+  // Si el superadmin no tiene empresa asignada → siempre va al panel de superadmin
+  if (profile?.is_superadmin && !profile?.company_id) {
+    redirect('/superadmin')
+  }
+
   // Si la empresa está inactiva y no es superadmin → pantalla suspendida
   const company = (profile?.companies as any)
   if (!profile?.is_superadmin && company && !company.active) {

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { SuperAdminNav } from '@/components/superadmin/superadmin-nav'
+import { LogOut } from 'lucide-react'
 
 export default async function SuperAdminLayout({
   children,
@@ -35,14 +36,23 @@ export default async function SuperAdminLayout({
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-xs" style={{ color: '#9DBEBB' }}>
-              {profile.full_name}
-            </span>
-            <a href="/dashboard"
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold"
-              style={{ background: 'rgba(70,129,137,0.2)', color: '#9DBEBB' }}>
-              ← Volver al sistema
-            </a>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ background: 'rgba(70,129,137,0.3)', color: '#9DBEBB' }}>
+                {(profile.full_name ?? 'S').charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xs" style={{ color: '#9DBEBB' }}>
+                {profile.full_name}
+              </span>
+            </div>
+            <form action="/api/auth/signout" method="POST">
+              <button type="submit"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
+                style={{ background: 'rgba(217,79,79,0.15)', color: '#f87171', border: '1px solid rgba(217,79,79,0.2)' }}>
+                <LogOut className="w-3 h-3" />
+                Cerrar sesión
+              </button>
+            </form>
           </div>
         </div>
       </header>

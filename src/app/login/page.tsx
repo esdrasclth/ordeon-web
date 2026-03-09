@@ -31,7 +31,17 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_superadmin')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
+      .single()
+
+    if (profile?.is_superadmin) {
+      router.push('/superadmin')
+    } else {
+      router.push('/dashboard')
+    }
     router.refresh()
   }
 
