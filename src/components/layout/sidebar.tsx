@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package2, Users, UserCog,
   Settings, LogOut, ShoppingCart,
-  ChevronLeft, ChevronRight, Receipt, Warehouse, BookOpen, ShoppingBag
+  ChevronLeft, ChevronRight, Receipt, Warehouse, BookOpen, ShoppingBag,
+  BarChart2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { UserRole } from '@/types'
@@ -29,6 +30,7 @@ const ALL_NAV_ITEMS = [
   { href: '/dashboard/clientes',       label: 'Clientes',       icon: Users           },
   { href: '/dashboard/facturacion',    label: 'Facturación',    icon: Receipt         },
   { href: '/dashboard/contabilidad',   label: 'Contabilidad',   icon: BookOpen        },
+  { href: '/dashboard/reportes',       label: 'Reportes',       icon: BarChart2       },
   { href: '/dashboard/usuarios',       label: 'Usuarios',       icon: UserCog         },
   { href: '/dashboard/configuracion',  label: 'Configuración',  icon: Settings        },
 ]

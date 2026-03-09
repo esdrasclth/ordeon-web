@@ -29,6 +29,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard/compras',
     '/dashboard/compras/nueva',
     '/dashboard/compras/proveedores',
+    '/dashboard/reportes',
   ],
   supervisor: [
     '/dashboard',
@@ -36,6 +37,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/dashboard/clientes',
     '/dashboard/ordenes',
     '/dashboard/ordenes/nueva',
+    '/dashboard/reportes',
   ],
   vendedor: [
     '/dashboard',
@@ -52,6 +54,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   facturacion: [
     '/dashboard',
     '/dashboard/ordenes',
+    '/dashboard/reportes',
   ],
 }
 
