@@ -65,8 +65,8 @@ export default function LoginPage() {
             style={{ background: '#468189' }}>
             <Package2 className="w-8 h-8" style={{ color: '#F4E9CD' }} />
           </div>
-          <h1 className="text-3xl font-bold" style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif' }}>
-            Ordeon
+          <h1 className="text-3xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>
+            <span style={{ color: '#F4E9CD' }}>Ord</span><span style={{ color: '#468189' }}>eon</span>
           </h1>
           <p className="mt-1 text-sm" style={{ color: '#9DBEBB' }}>
             Sistema de Gestión Empresarial

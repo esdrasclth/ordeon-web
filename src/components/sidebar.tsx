@@ -11,12 +11,12 @@ import { useState } from 'react'
 import { UserRole } from '@/types'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard, roles: ['admin','supervisor','vendedor','almacen','facturacion'] },
-  { href: '/productos',   label: 'Productos',   icon: Package2,        roles: ['admin','supervisor'] },
-  { href: '/clientes',    label: 'Clientes',    icon: Users,           roles: ['admin','supervisor','vendedor'] },
-  { href: '/ordenes',     label: 'Órdenes',     icon: ShoppingCart,    roles: ['admin','supervisor','vendedor','almacen','facturacion'] },
-  { href: '/usuarios',    label: 'Usuarios',    icon: UserCog,         roles: ['admin'] },
-  { href: '/configuracion', label: 'Configuración', icon: Settings,    roles: ['admin'] },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'supervisor', 'vendedor', 'almacen', 'facturacion'] },
+  { href: '/productos', label: 'Productos', icon: Package2, roles: ['admin', 'supervisor'] },
+  { href: '/clientes', label: 'Clientes', icon: Users, roles: ['admin', 'supervisor', 'vendedor'] },
+  { href: '/ordenes', label: 'Órdenes', icon: ShoppingCart, roles: ['admin', 'supervisor', 'vendedor', 'almacen', 'facturacion'] },
+  { href: '/usuarios', label: 'Usuarios', icon: UserCog, roles: ['admin'] },
+  { href: '/configuracion', label: 'Configuración', icon: Settings, roles: ['admin'] },
 ]
 
 interface SidebarProps {
@@ -72,8 +72,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
         </div>
         {!collapsed && (
           <span className="font-bold text-base tracking-wide"
-            style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}>
-            Ordeon
+            style={{ fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}>
+            <span style={{ color: '#F4E9CD' }}>Ord</span><span style={{ color: '#468189' }}>eon</span>
           </span>
         )}
       </div>

@@ -114,9 +114,9 @@ export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName,
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
             <span
               className="font-bold text-base tracking-wide block"
-              style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}
+              style={{ fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}
             >
-              Ordeon
+              <span style={{ color: '#F4E9CD' }}>Ord</span><span style={{ color: '#468189' }}>eon</span>
             </span>
             {companyName && (
               <span
