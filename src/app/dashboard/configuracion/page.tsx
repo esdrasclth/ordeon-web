@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog'
-import { Loader2, Plus, ToggleLeft, ToggleRight, Building2, DollarSign, Truck, CreditCard, Trash2 } from 'lucide-react'
+import { Loader2, Plus, ToggleLeft, ToggleRight, Building2, DollarSign, Truck, CreditCard, Trash2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatHNPhone } from '@/components/shared/phone-input'
+import { DEPARTMENT_CITIES, DEPARTMENTS } from '@/lib/honduras-geodata'
 
 // ── Componente: sección de empresa / fiscal ─────────────────────────
 function EmpresaTab() {
@@ -26,6 +27,8 @@ function EmpresaTab() {
     company_phone: '',
     company_email: '',
     company_address: '',
+    company_department: '',
+    company_city: '',
     isv_rate: '',
     max_discount_vendor: '',
     max_discount_supervisor: '',
@@ -41,6 +44,8 @@ function EmpresaTab() {
       company_phone: settings.company_phone ?? '',
       company_email: settings.company_email ?? '',
       company_address: settings.company_address ?? '',
+      company_department: settings.company_department ?? '',
+      company_city: settings.company_city ?? '',
       isv_rate: settings.isv_rate ?? '',
       max_discount_vendor: settings.max_discount_vendor ?? '',
       max_discount_supervisor: settings.max_discount_supervisor ?? '',
@@ -117,9 +122,61 @@ function EmpresaTab() {
           <Input
             value={form.company_address}
             onChange={e => setForm(f => ({ ...f, company_address: e.target.value }))}
-            placeholder="Col. Trejo, Tegucigalpa"
+            placeholder="Blvd. Morazán, Torre Empresarial, Piso 7"
             className="mt-1 h-10"
           />
+        </div>
+
+        {/* Departamento y Ciudad */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" style={{ color: '#468189' }} />
+                Departamento
+              </span>
+            </Label>
+            <select
+              value={form.company_department}
+              onChange={e => setForm(f => ({ ...f, company_department: e.target.value, company_city: '' }))}
+              className="mt-1 w-full h-10 rounded-md border px-3 text-sm outline-none transition-colors"
+              style={{
+                borderColor: 'rgba(68,129,137,0.3)',
+                color: form.company_department ? '#031926' : '#9DBEBB',
+                background: '#fff',
+              }}
+            >
+              <option value="">Seleccionar departamento...</option>
+              {DEPARTMENTS.map(dep => (
+                <option key={dep} value={dep}>{dep}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" style={{ color: '#468189' }} />
+                Ciudad / Municipio
+              </span>
+            </Label>
+            <select
+              value={form.company_city}
+              onChange={e => setForm(f => ({ ...f, company_city: e.target.value }))}
+              disabled={!form.company_department}
+              className="mt-1 w-full h-10 rounded-md border px-3 text-sm outline-none transition-colors"
+              style={{
+                borderColor: 'rgba(68,129,137,0.3)',
+                color: form.company_city ? '#031926' : '#9DBEBB',
+                background: form.company_department ? '#fff' : '#f8fafa',
+                cursor: form.company_department ? 'pointer' : 'not-allowed',
+              }}
+            >
+              <option value="">{form.company_department ? 'Seleccionar ciudad...' : 'Primero elige un departamento'}</option>
+              {form.company_department && DEPARTMENT_CITIES[form.company_department]?.map(city => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
