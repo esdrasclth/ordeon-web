@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { Product } from '@/types'
-import { tryCreateJournalEntry, buildStockEntryJournalEntry } from '@/lib/accounting-integration'
+import { tryCreateJournalEntry, buildStockEntryJournalEntry, buildStockExitJournalEntry } from '@/lib/accounting-integration'
 
 const supabase = createClient()
 
@@ -60,27 +60,41 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: async (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
-      const companyId = await getCompanyId()
+      const companyId    = await getCompanyId()
+      const initialStock = Number(product.stock ?? 0)
+
+      // Insertar producto con stock = 0; el stock inicial lo establece el RPC
+      // para que quede registrado como movimiento de inventario
       const { data, error } = await supabase
         .from('products')
-        .insert({ ...product, company_id: companyId })
+        .insert({ ...product, stock: 0, company_id: companyId })
         .select()
         .single()
       if (error) throw error
 
-      // Si el producto se crea con stock inicial > 0, generar asiento contable
-      const initialStock = Number(product.stock ?? 0)
-      const unitCost     = Number(product.purchase_price ?? 0)
-      if (initialStock > 0 && unitCost > 0) {
-        const today   = new Date().toISOString().split('T')[0]
-        const payload = buildStockEntryJournalEntry({
-          date:        today,
-          productName: product.name,
-          quantity:    initialStock,
-          unitCost,
-          reference:   `Stock inicial — ${product.name}`,
+      // Si el producto se crea con stock inicial > 0:
+      // 1. Registrar movimiento de entrada en stock_movements via RPC (suma el stock)
+      // 2. Generar asiento contable automático
+      const unitCost = Number(product.purchase_price ?? 0)
+      if (initialStock > 0) {
+        await supabase.rpc('adjust_stock', {
+          p_product_id: data.id,
+          p_quantity:   initialStock,
+          p_type:       'entrada',
+          p_notes:      'Stock inicial al crear producto',
         })
-        await tryCreateJournalEntry(payload)
+
+        if (unitCost > 0) {
+          const today   = new Date().toISOString().split('T')[0]
+          const payload = buildStockEntryJournalEntry({
+            date:        today,
+            productName: product.name,
+            quantity:    initialStock,
+            unitCost,
+            reference:   `Stock inicial — ${product.name}`,
+          })
+          await tryCreateJournalEntry(payload)
+        }
       }
 
       return data
@@ -131,6 +145,47 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const companyId = await getCompanyId()
+
+      // Leer stock y precio ANTES de eliminar el producto
+      const { data: prod } = await supabase
+        .from('products')
+        .select('name, stock, purchase_price')
+        .eq('id', id)
+        .eq('company_id', companyId)
+        .single()
+
+      // Si el producto tiene stock > 0, registrar salida ANTES del delete físico
+      const currentStock = Number(prod?.stock ?? 0)
+      const unitCost     = Number(prod?.purchase_price ?? 0)
+
+      if (currentStock > 0) {
+        // Insertar movimiento de salida directamente (el RPC fallaría después del delete)
+        await supabase.from('stock_movements').insert({
+          product_id:   id,
+          company_id:   companyId,
+          type:         'salida',
+          quantity:     currentStock,
+          stock_before: currentStock,
+          stock_after:  0,
+          notes:        `Salida por eliminación de producto — ${prod?.name ?? id}`,
+        })
+
+        // Asiento contable best-effort
+        if (unitCost > 0) {
+          const today   = new Date().toISOString().split('T')[0]
+          const payload = buildStockExitJournalEntry({
+            date:        today,
+            productName: prod!.name,
+            quantity:    currentStock,
+            unitCost,
+            reference:   `Eliminación producto — ${prod!.name}`,
+          })
+          await tryCreateJournalEntry(payload)
+        }
+      }
+
+      // Ahora sí, eliminar el producto
       const { error } = await supabase.rpc('delete_product', { p_id: id })
       if (error) throw error
     },
