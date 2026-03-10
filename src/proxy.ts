@@ -28,13 +28,15 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  const isAuthRoute    = pathname.startsWith('/login')
-  const isPublicRoute  = pathname === '/'
+  const isAuthRoute = pathname.startsWith('/login')
+  const isPublicRoute = pathname === '/'
     || pathname.startsWith('/suspendida')
     || pathname.startsWith('/sin-empresa')
     || pathname.startsWith('/factura')
-  const isApiRoute     = pathname.startsWith('/api')
-  const isSuperAdmin   = pathname.startsWith('/superadmin')
+    || pathname.startsWith('/onboarding')   // flujo independiente con su propia auth
+    || pathname.startsWith('/print')        // rutas de impresión
+  const isApiRoute = pathname.startsWith('/api')
+  const isSuperAdmin = pathname.startsWith('/superadmin')
 
   if (isPublicRoute || isApiRoute) return supabaseResponse
 
@@ -62,9 +64,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && pathname.startsWith('/dashboard')) {
-    let role: UserRole   = 'vendedor'
+    let role: UserRole = 'vendedor'
     let modules: string[] = ['core']
-    let is_superadmin    = false
+    let is_superadmin = false
 
     try {
       const { data: profile } = await supabase
@@ -73,7 +75,7 @@ export async function proxy(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      if (profile?.role)         role          = profile.role as UserRole
+      if (profile?.role) role = profile.role as UserRole
       if (profile?.is_superadmin) is_superadmin = true
 
       const company = (profile?.companies as any)

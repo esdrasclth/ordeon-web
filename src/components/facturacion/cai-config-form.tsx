@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatHNPhone } from '@/components/shared/phone-input'
 
 const supabase = createClient()
 
@@ -132,8 +133,9 @@ export function CAIConfigForm({
               <div>
                 <label className="text-xs font-semibold block mb-1" style={{ color: '#555' }}>Teléfono</label>
                 <Input value={form.phone}
-                  onChange={e => set('phone', e.target.value)}
-                  placeholder="+504 0000-0000" />
+                  onChange={e => set('phone', formatHNPhone(e.target.value))}
+                  placeholder="+504 0000-0000"
+                  maxLength={14} />
               </div>
               <div>
                 <label className="text-xs font-semibold block mb-1" style={{ color: '#555' }}>Correo</label>

@@ -12,9 +12,9 @@ import { EmpresaForm } from '@/components/superadmin/empresa-form'
 const supabase = createClient()
 
 const PLAN_COLORS: Record<string, string> = {
-  basico:        '#9DBEBB',
-  profesional:   '#468189',
-  completo:      '#031926',
+  basico: '#9DBEBB',
+  profesional: '#468189',
+  completo: '#031926',
   personalizado: '#e67e22',
 }
 
@@ -24,22 +24,22 @@ function DeleteCompanyModal({
   onClose,
   onDeleted,
 }: {
-  company:   any
-  onClose:   () => void
+  company: any
+  onClose: () => void
   onDeleted: () => void
 }) {
   const [password, setPassword] = useState('')
-  const [loading,  setLoading]  = useState(false)
-  const [step,     setStep]     = useState<'warn' | 'confirm'>('warn')
+  const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState<'warn' | 'confirm'>('warn')
 
   const handleDelete = async () => {
     if (!password) { toast.error('Ingresa tu contraseña'); return }
     setLoading(true)
 
     const res = await fetch('/api/superadmin/delete-company', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ company_id: company.id, password }),
+      body: JSON.stringify({ company_id: company.id, password }),
     })
 
     const data = await res.json()
@@ -146,17 +146,17 @@ function DeleteCompanyModal({
 // ── Componente principal ─────────────────────────────────
 export function EmpresasClient({ companies }: { companies: any[] }) {
   const router = useRouter()
-  const [showForm,        setShowForm]        = useState(false)
-  const [editingCompany,  setEditingCompany]  = useState<any | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editingCompany, setEditingCompany] = useState<any | null>(null)
   const [deletingCompany, setDeletingCompany] = useState<any | null>(null)
-  const [loading,         setLoading]         = useState<string | null>(null)
+  const [loading, setLoading] = useState<string | null>(null)
 
   const handleToggleActive = async (company: any) => {
     setLoading(company.id)
     const res = await fetch('/api/superadmin/toggle-company', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ company_id: company.id, active: !company.active }),
+      body: JSON.stringify({ company_id: company.id, active: !company.active }),
     })
     const data = await res.json()
     if (!res.ok) {
@@ -171,19 +171,21 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
   const handleSave = async (data: any) => {
     if (editingCompany) {
       const res = await fetch('/api/superadmin/update-company', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          company_id:      editingCompany.id,
-          name:            data.name,
-          slug:            data.slug,
-          plan:            data.plan,
-          modules:         data.modules,
-          email:           data.email,
-          phone:           data.phone,
-          address:         data.address,
-          notes:           data.notes,
-          payment_day:     data.payment_day,
+        body: JSON.stringify({
+          company_id: editingCompany.id,
+          name: data.name,
+          slug: data.slug,
+          plan: data.plan,
+          modules: data.modules,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          department: data.department,
+          city: data.city,
+          notes: data.notes,
+          payment_day: data.payment_day,
           next_payment_at: data.next_payment_at || null,
         }),
       })
@@ -195,17 +197,19 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
       router.refresh()
     } else {
       const { error } = await supabase.from('companies').insert({
-        name:            data.name,
-        slug:            data.slug,
-        plan:            data.plan,
-        modules:         data.modules,
-        email:           data.email,
-        phone:           data.phone,
-        address:         data.address,
-        notes:           data.notes,
-        payment_day:     data.payment_day,
+        name: data.name,
+        slug: data.slug,
+        plan: data.plan,
+        modules: data.modules,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        department: data.department,
+        city: data.city,
+        notes: data.notes,
+        payment_day: data.payment_day,
         next_payment_at: data.next_payment_at || null,
-        active:          true,
+        active: true,
       })
       if (error) {
         toast.error(error.message.includes('slug')
@@ -272,7 +276,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                   <span className="text-xs px-2 py-1 rounded-full font-bold capitalize"
                     style={{
                       background: `${PLAN_COLORS[c.plan] ?? '#468189'}18`,
-                      color:       PLAN_COLORS[c.plan] ?? '#468189',
+                      color: PLAN_COLORS[c.plan] ?? '#468189',
                     }}>
                     {c.plan}
                   </span>
@@ -309,7 +313,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                   <span className="text-xs px-2 py-1 rounded-full font-bold"
                     style={{
                       background: c.active ? '#27ae6015' : '#d94f4f15',
-                      color:      c.active ? '#27ae60'   : '#d94f4f',
+                      color: c.active ? '#27ae60' : '#d94f4f',
                     }}>
                     {c.active ? 'Activa' : 'Inactiva'}
                   </span>
@@ -330,7 +334,7 @@ export function EmpresasClient({ companies }: { companies: any[] }) {
                       title={c.active ? 'Desactivar' : 'Activar'}>
                       {c.active
                         ? <PowerOff className="w-3.5 h-3.5" />
-                        : <Power    className="w-3.5 h-3.5" />}
+                        : <Power className="w-3.5 h-3.5" />}
                     </Button>
                     <Button size="sm" variant="ghost"
                       onClick={() => setDeletingCompany(c)}

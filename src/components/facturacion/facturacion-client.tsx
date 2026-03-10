@@ -31,27 +31,36 @@ export function FacturacionClient({
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold"
-            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Facturación
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#468189' }}>
-            {invoices.filter(i => i.status === 'emitida').length} factura(s) emitida(s)
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <Settings className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold"
+              style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Facturación
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              {invoices.filter(i => i.status === 'emitida').length} factura(s) emitida(s)
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowCAIForm(true)}>
-            <Settings className="w-4 h-4 mr-2" />
+          <button onClick={() => setShowCAIForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border"
+            style={{ borderColor: '#e2e8f0', background: '#f1f5f9', color: '#475569' }}>
+            <Settings className="w-4 h-4" />
             Configurar CAI
-          </Button>
+          </button>
           {config && !caiExpired && (
-            <Button
+            <button
               onClick={() => router.push('/dashboard/facturacion/nueva')}
-              style={{ background: '#468189', color: '#F4E9CD' }}>
-              <Plus className="w-4 h-4 mr-2" />
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}>
+              <Plus className="w-4 h-4" />
               Nueva Factura
-            </Button>
+            </button>
           )}
         </div>
       </div>

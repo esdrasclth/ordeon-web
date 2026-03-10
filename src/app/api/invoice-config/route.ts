@@ -11,13 +11,13 @@ export async function POST(req: Request) {
   try {
     const supabase = await createClient()
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('company_id, role, is_superadmin')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (!profile?.company_id) {
@@ -47,9 +47,20 @@ export async function POST(req: Request) {
         const { error } = await supabaseAdmin
           .from('invoice_configs')
           .update({
-            ...data,
-            ...(rangeChanged ? { current_correlative: rangeStart } : {}),
+            business_name: data.business_name,
+            commercial_name: data.commercial_name,
+            rtn: data.rtn,
+            address: data.address,
+            phone: data.phone,
+            email: data.email,
+            cai: data.cai,
+            cai_expires_at: data.cai_expires_at,
+            range_from: data.range_from,
+            range_to: data.range_to,
+            isv_rate: data.isv_rate,
+            footer_text: data.footer_text,
             updated_at: new Date().toISOString(),
+            ...(rangeChanged ? { current_correlative: rangeStart } : {}),
           })
           .eq('company_id', profile.company_id)
 
@@ -58,8 +69,19 @@ export async function POST(req: Request) {
         const { error } = await supabaseAdmin
           .from('invoice_configs')
           .insert({
-            ...data,
-            company_id:          profile.company_id,
+            business_name: data.business_name,
+            commercial_name: data.commercial_name,
+            rtn: data.rtn,
+            address: data.address,
+            phone: data.phone,
+            email: data.email,
+            cai: data.cai,
+            cai_expires_at: data.cai_expires_at,
+            range_from: data.range_from,
+            range_to: data.range_to,
+            isv_rate: data.isv_rate,
+            footer_text: data.footer_text,
+            company_id: profile.company_id,
             current_correlative: rangeStart,
           })
 

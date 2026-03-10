@@ -37,9 +37,9 @@ function WarehouseFormModal({
   const update = useUpdateWarehouse()
 
   const [form, setForm] = useState<WarehouseFormData>({
-    name:       warehouse?.name       ?? '',
-    code:       warehouse?.code       ?? '',
-    location:   warehouse?.location   ?? '',
+    name: warehouse?.name ?? '',
+    code: warehouse?.code ?? '',
+    location: warehouse?.location ?? '',
     is_default: warehouse?.is_default ?? false,
   })
 
@@ -56,18 +56,18 @@ function WarehouseFormModal({
     try {
       if (isEditing) {
         await update.mutateAsync({
-          id:         warehouse.id,
-          name:       form.name.trim(),
-          code:       form.code.trim(),
-          location:   form.location.trim() || null,
+          id: warehouse.id,
+          name: form.name.trim(),
+          code: form.code.trim(),
+          location: form.location.trim() || null,
           is_default: form.is_default,
         })
         toast.success('Bodega actualizada')
       } else {
         await create.mutateAsync({
-          name:       form.name.trim(),
-          code:       form.code.trim(),
-          location:   form.location.trim() || undefined,
+          name: form.name.trim(),
+          code: form.code.trim(),
+          location: form.location.trim() || undefined,
           is_default: form.is_default,
         })
         toast.success('Bodega creada')
@@ -171,13 +171,13 @@ export default function BodegasPage() {
   const { data: warehouses, isLoading } = useWarehouses()
   const deleteWarehouse = useDeleteWarehouse()
 
-  const [showForm, setShowForm]       = useState(false)
-  const [editing, setEditing]         = useState<Warehouse | null>(null)
-  const [deletingId, setDeletingId]   = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Warehouse | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleOpenCreate = () => { setEditing(null); setShowForm(true) }
-  const handleOpenEdit   = (w: Warehouse) => { setEditing(w); setShowForm(true) }
-  const handleClose      = () => { setShowForm(false); setEditing(null) }
+  const handleOpenEdit = (w: Warehouse) => { setEditing(w); setShowForm(true) }
+  const handleClose = () => { setShowForm(false); setEditing(null) }
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
@@ -194,23 +194,30 @@ export default function BodegasPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold"
-            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Bodegas
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            Gestión de ubicaciones de almacenamiento
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <WarehouseIcon className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold"
+              style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Bodegas
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              Gestión de ubicaciones de almacenamiento
+            </p>
+          </div>
         </div>
-        <Button
+        <button
           onClick={handleOpenCreate}
-          style={{ background: '#468189', color: '#F4E9CD' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Nueva Bodega
-        </Button>
+        </button>
       </div>
 
       {/* Tabla */}

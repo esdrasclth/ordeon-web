@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSettings, useUpdateSetting, useListValues, useCreateListValue, useToggleListValue, useDeleteListValue  } from '@/lib/hooks/use-settings'
+import { useSettings, useUpdateSetting, useListValues, useCreateListValue, useToggleListValue, useDeleteListValue } from '@/lib/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Loader2, Plus, ToggleLeft, ToggleRight, Building2, DollarSign, Truck, CreditCard, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatHNPhone } from '@/components/shared/phone-input'
 
 // ── Componente: sección de empresa / fiscal ─────────────────────────
 function EmpresaTab() {
@@ -95,8 +96,9 @@ function EmpresaTab() {
             <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>Teléfono</Label>
             <Input
               value={form.company_phone}
-              onChange={e => setForm(f => ({ ...f, company_phone: e.target.value }))}
-              placeholder="2222-0000"
+              onChange={e => setForm(f => ({ ...f, company_phone: formatHNPhone(e.target.value) }))}
+              placeholder="+504 0000-0000"
+              maxLength={14}
               className="mt-1 h-10"
             />
           </div>
@@ -358,13 +360,19 @@ function ListValuesTab({ listType, icon, title, placeholder }: {
 export default function ConfiguracionPage() {
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-          Configuración
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-          Parámetros generales del sistema
-        </p>
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+          <Building2 className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+            Configuración
+          </h1>
+          <p className="text-sm" style={{ color: '#64748b' }}>
+            Parámetros generales del sistema
+          </p>
+        </div>
       </div>
 
       <Tabs defaultValue="empresa">

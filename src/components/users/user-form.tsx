@@ -12,40 +12,41 @@ import {
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { Profile, UserRole } from '@/types'
+import { formatHNPhone } from '@/components/shared/phone-input'
 
 const createSchema = z.object({
   full_name: z.string().min(1, 'El nombre es requerido'),
-  email:     z.string().email('Correo inválido'),
-  password:  z.string().min(6, 'Mínimo 6 caracteres'),
-  role:      z.string().min(1),
-  region:    z.string().optional(),
-  phone:     z.string().optional(),
+  email: z.string().email('Correo inválido'),
+  password: z.string().min(6, 'Mínimo 6 caracteres'),
+  role: z.string().min(1),
+  region: z.string().optional(),
+  phone: z.string().optional(),
 })
 
 const editSchema = z.object({
   full_name: z.string().min(1, 'El nombre es requerido'),
-  role:      z.string().min(1),
-  region:    z.string().optional(),
-  phone:     z.string().optional(),
-  active:    z.boolean(),
+  role: z.string().min(1),
+  region: z.string().optional(),
+  phone: z.string().optional(),
+  active: z.boolean(),
 })
 
 type CreateFormData = z.infer<typeof createSchema>
-type EditFormData   = z.infer<typeof editSchema>
+type EditFormData = z.infer<typeof editSchema>
 
 const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'admin',       label: 'Administrador' },
-  { value: 'supervisor',  label: 'Supervisor'    },
-  { value: 'vendedor',    label: 'Vendedor'      },
-  { value: 'almacen',     label: 'Almacén'       },
-  { value: 'facturacion', label: 'Facturación'   },
+  { value: 'admin', label: 'Administrador' },
+  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'vendedor', label: 'Vendedor' },
+  { value: 'almacen', label: 'Almacén' },
+  { value: 'facturacion', label: 'Facturación' },
 ]
 
 interface UserFormProps {
-  user?:     Profile
-  onSubmit:  (data: any) => Promise<void>
-  onCancel:  () => void
-  loading?:  boolean
+  user?: Profile
+  onSubmit: (data: any) => Promise<void>
+  onCancel: () => void
+  loading?: boolean
 }
 
 export function UserForm({ user, onSubmit, onCancel, loading }: UserFormProps) {
@@ -55,17 +56,17 @@ export function UserForm({ user, onSubmit, onCancel, loading }: UserFormProps) {
     resolver: zodResolver(isEdit ? editSchema : createSchema),
     defaultValues: isEdit ? {
       full_name: user.full_name,
-      role:      user.role,
-      region:    user.region    ?? '',
-      phone:     user.phone     ?? '',
-      active:    user.active,
+      role: user.role,
+      region: user.region ?? '',
+      phone: user.phone ?? '',
+      active: user.active,
     } : {
       full_name: '',
-      email:     '',
-      password:  '',
-      role:      'vendedor',
-      region:    '',
-      phone:     '',
+      email: '',
+      password: '',
+      role: 'vendedor',
+      region: '',
+      phone: '',
     },
   })
 
@@ -91,7 +92,7 @@ export function UserForm({ user, onSubmit, onCancel, loading }: UserFormProps) {
               Correo electrónico <span style={{ color: '#468189' }}>*</span>
             </Label>
             <Input {...register('email')} type="email" placeholder="correo@empresa.com" className="mt-1 h-10" />
-            <FieldError msg={ (errors as any).email?.message as string } />
+            <FieldError msg={(errors as any).email?.message as string} />
           </div>
           <div>
             <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>
@@ -121,7 +122,17 @@ export function UserForm({ user, onSubmit, onCancel, loading }: UserFormProps) {
         </div>
         <div>
           <Label style={{ color: '#031926', fontWeight: 600, fontSize: 12 }}>Teléfono</Label>
-          <Input {...register('phone')} placeholder="9999-9999" className="mt-1 h-10" />
+          <Input
+            {...register('phone')}
+            placeholder="+504 9999-9999"
+            maxLength={14}
+            className="mt-1 h-10"
+            onChange={e => {
+              const formatted = formatHNPhone(e.target.value)
+              e.target.value = formatted
+              register('phone').onChange(e)
+            }}
+          />
         </div>
       </div>
 

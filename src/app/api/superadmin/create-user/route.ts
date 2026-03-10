@@ -55,9 +55,10 @@ export async function POST(req: Request) {
       .from('profiles')
       .update({
         full_name,
-        role:       'admin',
+        role: 'admin',
         company_id,
-        phone:      phone || null,
+        phone: phone || null,
+        onboarding_completed: false,
       })
       .eq('id', newUser.user.id)
 
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
     // Enviar correo de bienvenida con credenciales
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/login`
     const { html, text } = buildWelcomeEmail({
-      adminName:   full_name,
+      adminName: full_name,
       companyName: company?.name ?? 'tu empresa',
       email,
       password,
@@ -76,8 +77,8 @@ export async function POST(req: Request) {
     })
 
     const emailResult = await resend.emails.send({
-      from:    process.env.RESEND_FROM_EMAIL ?? 'Ordeon ERP <noreply@ordeon.app>',
-      to:      email,
+      from: process.env.RESEND_FROM_EMAIL ?? 'Ordeon ERP <noreply@ordeon.app>',
+      to: email,
       subject: `Bienvenido a Ordeon ERP — ${company?.name ?? 'Tu empresa'}`,
       html,
       text,
@@ -90,10 +91,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      id:           newUser.user.id,
+      id: newUser.user.id,
       email,
-      emailSent:    !emailResult.error,
-      emailError:   emailResult.error?.message ?? null,
+      emailSent: !emailResult.error,
+      emailError: emailResult.error?.message ?? null,
     })
 
   } catch (err: any) {

@@ -14,7 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow
 } from '@/components/ui/table'
-import { Plus, Search, Pencil, PackageX, Eye, Trash2 } from 'lucide-react'
+import { Plus, Search, Pencil, PackageX, Eye, Trash2, Package2 } from 'lucide-react'
 import { Product } from '@/types'
 import { toast } from 'sonner'
 import { useCategories } from '@/lib/hooks/use-categories'
@@ -29,12 +29,12 @@ export default function ProductosPage() {
   const deleteProduct = useDeleteProduct()
   const { data: categories } = useCategories()
 
-  const [search,          setSearch]          = useState('')
-  const [statusFilter,    setStatusFilter]    = useState('all')
-  const [showForm,        setShowForm]        = useState(false)
-  const [editingProduct,  setEditingProduct]  = useState<Product | null>(null)
-  const [deletingId,      setDeletingId]      = useState<string | null>(null)
-  const [page,            setPage]            = useState(1)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
   const getStatus = (p: Product) => {
     if (Number(p.stock) <= 0) return 'sin_stock'
@@ -52,11 +52,11 @@ export default function ProductosPage() {
     }) ?? []
   }, [products, search, statusFilter])
 
-  const handleSearch = (v: string) => { setSearch(v);       setPage(1) }
+  const handleSearch = (v: string) => { setSearch(v); setPage(1) }
   const handleFilter = (v: string) => { setStatusFilter(v); setPage(1) }
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const handleCreate = async (data: any) => {
     try {
@@ -99,19 +99,27 @@ export default function ProductosPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Catálogo de Productos
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            {products?.filter(p => p.active).length ?? 0} productos activos
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <Package2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Catálogo de Productos
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              {products?.filter(p => p.active).length ?? 0} productos activos
+            </p>
+          </div>
         </div>
-        <Button onClick={() => setShowForm(true)} style={{ background: '#468189', color: '#F4E9CD' }}>
-          <Plus className="w-4 h-4 mr-2" />
+        <button onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}>
+          <Plus className="w-4 h-4" />
           Nuevo Producto
-        </Button>
+        </button>
       </div>
 
       {/* Filtros */}
@@ -128,17 +136,17 @@ export default function ProductosPage() {
         </div>
         <div className="flex gap-2">
           {[
-            { value: 'all',        label: 'Todos'      },
-            { value: 'normal',     label: 'Normal'     },
+            { value: 'all', label: 'Todos' },
+            { value: 'normal', label: 'Normal' },
             { value: 'stock_bajo', label: 'Stock Bajo' },
-            { value: 'sin_stock',  label: 'Sin Stock'  },
+            { value: 'sin_stock', label: 'Sin Stock' },
           ].map(f => (
             <button key={f.value} onClick={() => handleFilter(f.value)}
               className="px-3 py-2 rounded-lg text-xs font-semibold transition-all"
               style={{
                 background: statusFilter === f.value ? '#468189' : '#fff',
-                color:      statusFilter === f.value ? '#F4E9CD' : '#777',
-                border:     `1px solid ${statusFilter === f.value ? '#468189' : '#ddd'}`,
+                color: statusFilter === f.value ? '#F4E9CD' : '#777',
+                border: `1px solid ${statusFilter === f.value ? '#468189' : '#ddd'}`,
               }}>
               {f.label}
             </button>
@@ -217,24 +225,24 @@ export default function ProductosPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold"
                           style={{
-                            color: status === 'sin_stock'  ? '#d94f4f'
-                                 : status === 'stock_bajo' ? '#e67e22'
-                                 : '#27ae60'
+                            color: status === 'sin_stock' ? '#d94f4f'
+                              : status === 'stock_bajo' ? '#e67e22'
+                                : '#27ae60'
                           }}>
                           {Number(product.stock).toLocaleString('es-HN')}
                         </span>
                         <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
                           style={{
-                            background: status === 'sin_stock'  ? '#d94f4f15'
-                                      : status === 'stock_bajo' ? '#e67e2215'
-                                      : '#27ae6015',
-                            color:      status === 'sin_stock'  ? '#d94f4f'
-                                      : status === 'stock_bajo' ? '#e67e22'
-                                      : '#27ae60',
+                            background: status === 'sin_stock' ? '#d94f4f15'
+                              : status === 'stock_bajo' ? '#e67e2215'
+                                : '#27ae6015',
+                            color: status === 'sin_stock' ? '#d94f4f'
+                              : status === 'stock_bajo' ? '#e67e22'
+                                : '#27ae60',
                           }}>
-                          {status === 'sin_stock'  ? 'Sin stock'
-                         : status === 'stock_bajo' ? 'Stock bajo'
-                         : 'Normal'}
+                          {status === 'sin_stock' ? 'Sin stock'
+                            : status === 'stock_bajo' ? 'Stock bajo'
+                              : 'Normal'}
                         </span>
                       </div>
                       <p className="text-xs mt-0.5" style={{ color: '#9DBEBB' }}>
@@ -305,8 +313,8 @@ export default function ProductosPage() {
                     className="w-7 h-7 rounded text-xs font-bold"
                     style={{
                       background: page === p ? '#468189' : 'transparent',
-                      color:      page === p ? '#F4E9CD' : '#555',
-                      border:     `1px solid ${page === p ? '#468189' : '#ddd'}`,
+                      color: page === p ? '#F4E9CD' : '#555',
+                      border: `1px solid ${page === p ? '#468189' : '#ddd'}`,
                     }}>
                     {p}
                   </button>

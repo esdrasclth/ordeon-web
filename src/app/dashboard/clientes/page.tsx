@@ -198,27 +198,34 @@ export default function ClientesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold"
-            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Clientes
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            {clients?.length ?? 0} clientes registrados
-            {totalBlocked > 0 && (
-              <span className="ml-2 font-semibold" style={{ color: '#d94f4f' }}>
-                · {totalBlocked} con crédito excedido
-              </span>
-            )}
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <Users className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold"
+              style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Clientes
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              {clients?.length ?? 0} clientes registrados
+              {totalBlocked > 0 && (
+                <span className="ml-2 font-semibold" style={{ color: '#d94f4f' }}>
+                  · {totalBlocked} con crédito excedido
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         {actions.canManageClients && (
-          <Button onClick={() => setShowForm(true)}
-            style={{ background: '#468189', color: '#F4E9CD' }}>
-            <Plus className="w-4 h-4 mr-2" />
+          <button onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}>
+            <Plus className="w-4 h-4" />
             Nuevo Cliente
-          </Button>
+          </button>
         )}
       </div>
 

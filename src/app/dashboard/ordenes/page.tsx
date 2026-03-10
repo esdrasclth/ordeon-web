@@ -131,24 +131,31 @@ export default function OrdenesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Órdenes de Venta
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            {filteredOrders.length} órdenes encontradas
-            {isVendedor && <span className="ml-1" style={{ color: '#9DBEBB' }}>· solo tus órdenes</span>}
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <ShoppingCart className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Órdenes de Venta
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              {filteredOrders.length} órdenes encontradas
+              {isVendedor && <span className="ml-1" style={{ color: '#9DBEBB' }}>· solo tus órdenes</span>}
+            </p>
+          </div>
         </div>
         {actions.canCreateOrder && (
-          <Button
+          <button
             onClick={() => router.push('/dashboard/ordenes/nueva')}
-            style={{ background: '#468189', color: '#F4E9CD' }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Nueva Orden
-          </Button>
+          </button>
         )}
       </div>
 

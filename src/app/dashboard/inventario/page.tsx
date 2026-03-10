@@ -22,15 +22,15 @@ const fmt = (n: number) =>
     `L. ${Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
 const STATUS_CONFIG = {
-    normal:     { label: 'Normal',     color: '#27ae60', bg: '#27ae6015' },
+    normal: { label: 'Normal', color: '#27ae60', bg: '#27ae6015' },
     stock_bajo: { label: 'Stock Bajo', color: '#e67e22', bg: '#e67e2215' },
-    sin_stock:  { label: 'Sin Stock',  color: '#d94f4f', bg: '#d94f4f15' },
+    sin_stock: { label: 'Sin Stock', color: '#d94f4f', bg: '#d94f4f15' },
 }
 
 const ROTATION_CONFIG = {
-    normal:        { label: 'Normal',       color: '#27ae60' },
-    baja:          { label: 'Baja',         color: '#e67e22' },
-    sin_rotacion:  { label: 'Sin rotación', color: '#d94f4f' },
+    normal: { label: 'Normal', color: '#27ae60' },
+    baja: { label: 'Baja', color: '#e67e22' },
+    sin_rotacion: { label: 'Sin rotación', color: '#d94f4f' },
 }
 
 const PAGE_SIZE = 50
@@ -135,15 +135,21 @@ export default function InventarioPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
             {/* Header */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold"
-                        style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-                        Inventario
-                    </h1>
-                    <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-                        Estado actual del stock y valoración
-                    </p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+                        <Boxes className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold"
+                            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+                            Inventario
+                        </h1>
+                        <p className="text-sm" style={{ color: '#64748b' }}>
+                            Estado actual del stock y valoración
+                        </p>
+                    </div>
                 </div>
                 {products && settings && (
                     <PdfDownloadButton
@@ -157,11 +163,11 @@ export default function InventarioPage() {
             {/* KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
                 {[
-                    { label: 'Valor Total',      value: overviewLoading ? '...' : fmt(overview?.valor_total ?? 0),       icon: <TrendingUp className="w-5 h-5" />, color: '#468189' },
-                    { label: 'Total Productos',  value: overviewLoading ? '...' : String(overview?.total_productos ?? 0), icon: <Boxes className="w-5 h-5" />,     color: '#031926' },
-                    { label: 'Stock Normal',     value: overviewLoading ? '...' : String(overview?.stock_normal ?? 0),    icon: <Boxes className="w-5 h-5" />,     color: '#27ae60' },
-                    { label: 'Stock Bajo',       value: overviewLoading ? '...' : String(overview?.stock_bajo ?? 0),      icon: <AlertTriangle className="w-5 h-5" />, color: '#e67e22' },
-                    { label: 'Sin Stock',        value: overviewLoading ? '...' : String(overview?.sin_stock ?? 0),       icon: <XCircle className="w-5 h-5" />,   color: '#d94f4f' },
+                    { label: 'Valor Total', value: overviewLoading ? '...' : fmt(overview?.valor_total ?? 0), icon: <TrendingUp className="w-5 h-5" />, color: '#468189' },
+                    { label: 'Total Productos', value: overviewLoading ? '...' : String(overview?.total_productos ?? 0), icon: <Boxes className="w-5 h-5" />, color: '#031926' },
+                    { label: 'Stock Normal', value: overviewLoading ? '...' : String(overview?.stock_normal ?? 0), icon: <Boxes className="w-5 h-5" />, color: '#27ae60' },
+                    { label: 'Stock Bajo', value: overviewLoading ? '...' : String(overview?.stock_bajo ?? 0), icon: <AlertTriangle className="w-5 h-5" />, color: '#e67e22' },
+                    { label: 'Sin Stock', value: overviewLoading ? '...' : String(overview?.sin_stock ?? 0), icon: <XCircle className="w-5 h-5" />, color: '#d94f4f' },
                 ].map(kpi => (
                     <div key={kpi.label} className="rounded-xl p-5 shadow-sm"
                         style={{ background: '#fff', border: '1px solid rgba(68,129,137,0.12)' }}>
@@ -306,7 +312,7 @@ export default function InventarioPage() {
             <div>
                 <div className="flex gap-2 mb-4">
                     {[
-                        { key: 'stock',    label: 'Vista de Stock' },
+                        { key: 'stock', label: 'Vista de Stock' },
                         { key: 'rotacion', label: 'Rotación de Productos' },
                         ...(isMultiBodega ? [{ key: 'bodegas', label: 'Stock por Bodega' }] : []),
                     ].map(tab => (
@@ -339,10 +345,10 @@ export default function InventarioPage() {
                             </div>
                             <div className="flex gap-2">
                                 {[
-                                    { value: 'all',        label: 'Todos' },
-                                    { value: 'normal',     label: 'Normal' },
+                                    { value: 'all', label: 'Todos' },
+                                    { value: 'normal', label: 'Normal' },
                                     { value: 'stock_bajo', label: 'Stock Bajo' },
-                                    { value: 'sin_stock',  label: 'Sin Stock' },
+                                    { value: 'sin_stock', label: 'Sin Stock' },
                                 ].map(f => (
                                     <button key={f.value} onClick={() => handleFilter(f.value)}
                                         className="px-3 py-2 rounded-lg text-xs font-semibold transition-all"

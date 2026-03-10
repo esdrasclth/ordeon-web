@@ -6,19 +6,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { X, CheckCircle2, Building2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatHNPhone } from '@/components/shared/phone-input'
+import { DEPARTMENT_CITIES, DEPARTMENTS } from '@/lib/honduras-geodata'
 
 const supabase = createClient()
 
 const ALL_MODULES = [
-  { key: 'core',          label: 'Core' },
-  { key: 'ventas',        label: 'Ordenes' },
-  { key: 'clientes',      label: 'Clientes' },
-  { key: 'reportes',      label: 'Reportes' },
-  { key: 'compras',       label: 'Compras' },
-  { key: 'facturacion',   label: 'Facturación' },
-  { key: 'logistica',     label: 'Logística' },
-  { key: 'multi_bodega',  label: 'Multi-bodega' },
-  { key: 'contabilidad',  label: 'Contabilidad' },
+  { key: 'core', label: 'Core' },
+  { key: 'ventas', label: 'Ordenes' },
+  { key: 'clientes', label: 'Clientes' },
+  { key: 'reportes', label: 'Reportes' },
+  { key: 'compras', label: 'Compras' },
+  { key: 'facturacion', label: 'Facturación' },
+  { key: 'logistica', label: 'Logística' },
+  { key: 'multi_bodega', label: 'Multi-bodega' },
+  { key: 'contabilidad', label: 'Contabilidad' },
 ]
 
 const PLANES = ['basico', 'profesional', 'completo', 'personalizado']
@@ -50,6 +52,8 @@ export function EmpresaForm({
   const [modules, setModules] = useState<string[]>(
     company?.modules ?? ['core']
   )
+  const [selectedDept, setSelectedDept] = useState<string>(company?.department ?? '')
+
   const [form, setForm] = useState({
     name: company?.name ?? '',
     slug: company?.slug ?? '',
@@ -57,6 +61,8 @@ export function EmpresaForm({
     email: company?.email ?? '',
     phone: company?.phone ?? '',
     address: company?.address ?? '',
+    department: company?.department ?? '',
+    city: company?.city ?? '',
     notes: company?.notes ?? '',
     payment_day: company?.payment_day ?? 1,
     next_payment_at: company?.next_payment_at
@@ -92,7 +98,6 @@ export function EmpresaForm({
     try {
       await onSave({ ...form, modules })
       if (!isEditing) {
-        // Obtener el id de la empresa recién creada
         const { data } = await supabase
           .from('companies')
           .select('id')
@@ -288,8 +293,12 @@ export function EmpresaForm({
                   </div>
                   <div>
                     <label className="text-xs font-semibold block mb-1" style={{ color: '#555' }}>Teléfono</label>
-                    <Input value={form.phone} onChange={e => set('phone', e.target.value)}
-                      placeholder="+504 0000-0000" />
+                    <Input
+                      value={form.phone}
+                      onChange={e => set('phone', formatHNPhone(e.target.value))}
+                      placeholder="+504 0000-0000"
+                      maxLength={14}
+                    />
                   </div>
                 </div>
 
@@ -312,10 +321,43 @@ export function EmpresaForm({
                   </div>
                 </div>
 
+                {/* Dirección + Departamento + Ciudad */}
                 <div>
                   <label className="text-xs font-semibold block mb-1" style={{ color: '#555' }}>Dirección</label>
                   <Input value={form.address} onChange={e => set('address', e.target.value)}
-                    placeholder="Ciudad, País" />
+                    placeholder="Boulevard Morazán, Torre Empresarial, Piso 7, Oficina 702" />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: '#555' }}>Departamento</label>
+                    <select
+                      value={form.department}
+                      onChange={e => {
+                        set('department', e.target.value)
+                        set('city', '')
+                        setSelectedDept(e.target.value)
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-sm"
+                      style={{ border: '1px solid #d0e0de', outline: 'none', fontFamily: 'inherit', background: '#fff', color: '#1e293b' }}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: '#555' }}>Ciudad / Municipio</label>
+                    <select
+                      value={form.city}
+                      onChange={e => set('city', e.target.value)}
+                      disabled={!selectedDept}
+                      className="w-full rounded-lg px-3 py-2 text-sm"
+                      style={{ border: '1px solid #d0e0de', outline: 'none', fontFamily: 'inherit', background: selectedDept ? '#fff' : '#f8fafa', color: '#1e293b' }}
+                    >
+                      <option value="">{selectedDept ? 'Seleccionar ciudad...' : 'Primero elige depto.'}</option>
+                      {(DEPARTMENT_CITIES[selectedDept] ?? []).map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
                 </div>
 
                 <div>
@@ -377,8 +419,9 @@ export function EmpresaForm({
                       Teléfono
                     </label>
                     <Input value={adminForm.phone}
-                      onChange={e => setAdmin('phone', e.target.value)}
-                      placeholder="+504 0000-0000" />
+                      onChange={e => setAdmin('phone', formatHNPhone(e.target.value))}
+                      placeholder="+504 0000-0000"
+                      maxLength={14} />
                   </div>
                 </div>
 

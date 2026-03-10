@@ -28,19 +28,19 @@ const PERIOD_LABELS: Record<string, string> = {
 
 interface PeriodOption { value: string; label: string }
 const PERIODS: PeriodOption[] = [
-  { value: 'today',  label: 'Hoy'           },
-  { value: 'week',   label: 'Semana'        },
-  { value: 'month',  label: 'Mes'           },
-  { value: 'year',   label: 'Año'           },
+  { value: 'today', label: 'Hoy' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'year', label: 'Año' },
   { value: 'custom', label: 'Personalizado' },
 ]
 
 const TABS = [
-  { id: 'ventas',       label: 'Ventas',       icon: TrendingUp   },
-  { id: 'inventario',   label: 'Inventario',   icon: Package      },
-  { id: 'facturacion',  label: 'Facturación',  icon: Receipt      },
-  { id: 'compras',      label: 'Compras',      icon: ShoppingCart },
-  { id: 'contabilidad', label: 'Contabilidad', icon: BookOpen     },
+  { id: 'ventas', label: 'Ventas', icon: TrendingUp },
+  { id: 'inventario', label: 'Inventario', icon: Package },
+  { id: 'facturacion', label: 'Facturación', icon: Receipt },
+  { id: 'compras', label: 'Compras', icon: ShoppingCart },
+  { id: 'contabilidad', label: 'Contabilidad', icon: BookOpen },
 ]
 
 // ─── Sub-componentes ─────────────────────────────────────────────────────────
@@ -105,8 +105,8 @@ function ReportCard({
       const res = await fetch(`/api/reports/export?${params}`)
       if (!res.ok) throw new Error('Error al generar reporte')
       const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
       a.href = url; a.download = `reporte_${type}_${Date.now()}.xlsx`; a.click()
       URL.revokeObjectURL(url)
     } catch (e) { console.error(e) } finally { setLoading(false) }
@@ -171,7 +171,7 @@ function ReportCard({
 function VentasTab({ period, from, to, has }: {
   period: string; from: string; to: string; has: (m: string) => boolean
 }) {
-  const [data, setData]       = useState<any>(null)
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const ACCENT = '#468189'
 
@@ -190,14 +190,14 @@ function VentasTab({ period, from, to, has }: {
     <div className="space-y-6">
       {loading ? (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
         </div>
       ) : data && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={TrendingUp} label="Total Ventas"      value={fmt(data.kpis.totalVentas)}    color={ACCENT}   sub={PERIOD_LABELS[period] ?? 'Período'} />
-          <StatCard icon={BarChart2}  label="Órdenes"           value={data.kpis.totalOrdenes}        color="#031926"  sub="activas (sin canceladas)" />
-          <StatCard icon={DollarSign} label="Ticket Promedio"   value={fmt(data.kpis.ticketPromedio)} color="#2980b9"  sub="por orden" />
-          <StatCard icon={Users}      label="Clientes Únicos"   value={data.kpis.clientesUnicos}      color="#27ae60"  sub="en el período" />
+          <StatCard icon={TrendingUp} label="Total Ventas" value={fmt(data.kpis.totalVentas)} color={ACCENT} sub={PERIOD_LABELS[period] ?? 'Período'} />
+          <StatCard icon={BarChart2} label="Órdenes" value={data.kpis.totalOrdenes} color="#031926" sub="activas (sin canceladas)" />
+          <StatCard icon={DollarSign} label="Ticket Promedio" value={fmt(data.kpis.ticketPromedio)} color="#2980b9" sub="por orden" />
+          <StatCard icon={Users} label="Clientes Únicos" value={data.kpis.clientesUnicos} color="#27ae60" sub="en el período" />
         </div>
       )}
 
@@ -208,7 +208,7 @@ function VentasTab({ period, from, to, has }: {
               <LineChart data={data.porDia} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="dia" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v/1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: any) => fmt(v)} labelFormatter={l => `Día: ${l}`} />
                 <Line type="monotone" dataKey="total" stroke={ACCENT} strokeWidth={2} dot={false} />
               </LineChart>
@@ -219,7 +219,7 @@ function VentasTab({ period, from, to, has }: {
             <ResponsiveContainer width="100%" height={220}>
               <ReBarChart data={data.porVendedor.slice(0, 8)} layout="vertical" margin={{ left: 60, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v/1000).toFixed(0)}k`} />
+                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v / 1000).toFixed(0)}k`} />
                 <YAxis type="category" dataKey="vendedor" tick={{ fontSize: 10 }} width={60} />
                 <Tooltip formatter={(v: any) => fmt(v)} />
                 <Bar dataKey="total" fill={ACCENT} radius={[0, 4, 4, 0]} />
@@ -232,7 +232,7 @@ function VentasTab({ period, from, to, has }: {
               <ReBarChart data={data.porProducto.slice(0, 10)} margin={{ top: 4, right: 8, left: 0, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="producto" tick={{ fontSize: 9 }} interval={0} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v/1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: any) => fmt(v)} />
                 <Bar dataKey="total" fill="#2980b9" radius={[4, 4, 0, 0]} />
               </ReBarChart>
@@ -293,7 +293,7 @@ function VentasTab({ period, from, to, has }: {
 function InventarioTab({ period, from, to, has }: {
   period: string; from: string; to: string; has: (m: string) => boolean
 }) {
-  const [data, setData]       = useState<any>(null)
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const ACCENT = '#27ae60'
 
@@ -312,14 +312,14 @@ function InventarioTab({ period, from, to, has }: {
     <div className="space-y-6">
       {loading ? (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
         </div>
       ) : data && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={Package}       label="Total Productos"    value={data.kpis.totalProductos}       color={ACCENT}   sub="activos" />
-          <StatCard icon={AlertTriangle} label="Bajo Mínimo"        value={data.kpis.bajoMinimo}           color="#e67e22"  sub="requieren reorden" />
-          <StatCard icon={DollarSign}    label="Valor Inventario"   value={fmt(data.kpis.valorInventario)} color="#2980b9"  sub="costo total" />
-          <StatCard icon={ArrowUpDown}   label="Movimientos"        value={data.kpis.movimientos}          color="#9b59b6"  sub="en el período" />
+          <StatCard icon={Package} label="Total Productos" value={data.kpis.totalProductos} color={ACCENT} sub="activos" />
+          <StatCard icon={AlertTriangle} label="Bajo Mínimo" value={data.kpis.bajoMinimo} color="#e67e22" sub="requieren reorden" />
+          <StatCard icon={DollarSign} label="Valor Inventario" value={fmt(data.kpis.valorInventario)} color="#2980b9" sub="costo total" />
+          <StatCard icon={ArrowUpDown} label="Movimientos" value={data.kpis.movimientos} color="#9b59b6" sub="en el período" />
         </div>
       )}
 
@@ -392,7 +392,7 @@ function InventarioTab({ period, from, to, has }: {
 function FacturacionTab({ period, from, to, has }: {
   period: string; from: string; to: string; has: (m: string) => boolean
 }) {
-  const [data, setData]       = useState<any>(null)
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const ACCENT = '#2980b9'
 
@@ -411,14 +411,14 @@ function FacturacionTab({ period, from, to, has }: {
     <div className="space-y-6">
       {loading ? (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
         </div>
       ) : data && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={Receipt}       label="Facturas Emitidas"   value={data.kpis.totalFacturas}       color={ACCENT}   sub="en el período" />
-          <StatCard icon={DollarSign}    label="Total Facturado"     value={fmt(data.kpis.totalFacturado)} color="#27ae60"  sub="sin canceladas" />
-          <StatCard icon={FileText}      label="ISV Causado"         value={fmt(data.kpis.totalIsv)}       color="#e67e22"  sub="ISV 15% SAR" />
-          <StatCard icon={AlertTriangle} label="Pendientes Cobro"    value={data.kpis.pendientesCobro}     color="#e74c3c"  sub="facturas por cobrar" />
+          <StatCard icon={Receipt} label="Facturas Emitidas" value={data.kpis.totalFacturas} color={ACCENT} sub="en el período" />
+          <StatCard icon={DollarSign} label="Total Facturado" value={fmt(data.kpis.totalFacturado)} color="#27ae60" sub="sin canceladas" />
+          <StatCard icon={FileText} label="ISV Causado" value={fmt(data.kpis.totalIsv)} color="#e67e22" sub="ISV 15% SAR" />
+          <StatCard icon={AlertTriangle} label="Pendientes Cobro" value={data.kpis.pendientesCobro} color="#e74c3c" sub="facturas por cobrar" />
         </div>
       )}
 
@@ -429,10 +429,10 @@ function FacturacionTab({ period, from, to, has }: {
               <ReBarChart data={data.porMes} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v/1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: any) => fmt(v)} />
-                <Bar dataKey="subtotal" name="Subtotal" fill={ACCENT} radius={[0,0,0,0]} stackId="a" />
-                <Bar dataKey="isv" name="ISV" fill="#e67e22" radius={[4,4,0,0]} stackId="a" />
+                <Bar dataKey="subtotal" name="Subtotal" fill={ACCENT} radius={[0, 0, 0, 0]} stackId="a" />
+                <Bar dataKey="isv" name="ISV" fill="#e67e22" radius={[4, 4, 0, 0]} stackId="a" />
               </ReBarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -444,7 +444,7 @@ function FacturacionTab({ period, from, to, has }: {
                 <XAxis dataKey="rango" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="cantidad" name="Facturas" fill="#e74c3c" radius={[4,4,0,0]} />
+                <Bar dataKey="cantidad" name="Facturas" fill="#e74c3c" radius={[4, 4, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -485,7 +485,7 @@ function FacturacionTab({ period, from, to, has }: {
 function ComprasTab({ period, from, to, has }: {
   period: string; from: string; to: string; has: (m: string) => boolean
 }) {
-  const [data, setData]       = useState<any>(null)
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const ACCENT = '#9b59b6'
 
@@ -504,14 +504,14 @@ function ComprasTab({ period, from, to, has }: {
     <div className="space-y-6">
       {loading ? (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
         </div>
       ) : data && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={ShoppingCart} label="Órdenes de Compra"  value={data.kpis.totalOC}            color={ACCENT}   sub="en el período" />
-          <StatCard icon={DollarSign}   label="Total Comprado"     value={fmt(data.kpis.totalComprado)} color="#2980b9"  sub="sin canceladas" />
-          <StatCard icon={Truck}        label="Proveedores"        value={data.kpis.proveedores}        color="#27ae60"  sub="con OC en el período" />
-          <StatCard icon={CreditCard}   label="Pagos Realizados"   value={fmt(data.kpis.totalPagado)}   color="#e67e22"  sub="en el período" />
+          <StatCard icon={ShoppingCart} label="Órdenes de Compra" value={data.kpis.totalOC} color={ACCENT} sub="en el período" />
+          <StatCard icon={DollarSign} label="Total Comprado" value={fmt(data.kpis.totalComprado)} color="#2980b9" sub="sin canceladas" />
+          <StatCard icon={Truck} label="Proveedores" value={data.kpis.proveedores} color="#27ae60" sub="con OC en el período" />
+          <StatCard icon={CreditCard} label="Pagos Realizados" value={fmt(data.kpis.totalPagado)} color="#e67e22" sub="en el período" />
         </div>
       )}
 
@@ -521,7 +521,7 @@ function ComprasTab({ period, from, to, has }: {
             <ResponsiveContainer width="100%" height={220}>
               <ReBarChart data={data.porProveedor.slice(0, 8)} layout="vertical" margin={{ left: 80, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v/1000).toFixed(0)}k`} />
+                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `L.${(v / 1000).toFixed(0)}k`} />
                 <YAxis type="category" dataKey="proveedor" tick={{ fontSize: 9 }} width={80} />
                 <Tooltip formatter={(v: any) => fmt(v)} />
                 <Bar dataKey="total" fill={ACCENT} radius={[0, 4, 4, 0]} />
@@ -573,11 +573,11 @@ function ComprasTab({ period, from, to, has }: {
 
 function ContabilidadTab() {
   const contReports = [
-    { icon: BarChart2,  title: 'Balance General',        accent: '#468189', href: '/dashboard/contabilidad/balance',      desc: 'Activos, pasivos y patrimonio al cierre del período.' },
-    { icon: TrendingUp, title: 'Estado de Resultados',   accent: '#27ae60', href: '/dashboard/contabilidad/resultados',   desc: 'Ingresos - Costos - Gastos = Utilidad del período.' },
-    { icon: BookOpen,   title: 'Libro Diario',           accent: '#031926', href: '/dashboard/contabilidad/diario',       desc: 'Todos los asientos contables registrados en el período.' },
-    { icon: BarChart,   title: 'Comprobación de Saldos', accent: '#2980b9', href: '/dashboard/contabilidad/comprobacion', desc: 'Balanza de comprobación: débitos y créditos por cuenta.' },
-    { icon: DollarSign, title: 'Mayor General',          accent: '#9b59b6', href: '/dashboard/contabilidad/mayor',        desc: 'Movimientos por cuenta contable con saldos acumulados.' },
+    { icon: BarChart2, title: 'Balance General', accent: '#468189', href: '/dashboard/contabilidad/balance', desc: 'Activos, pasivos y patrimonio al cierre del período.' },
+    { icon: TrendingUp, title: 'Estado de Resultados', accent: '#27ae60', href: '/dashboard/contabilidad/resultados', desc: 'Ingresos - Costos - Gastos = Utilidad del período.' },
+    { icon: BookOpen, title: 'Libro Diario', accent: '#031926', href: '/dashboard/contabilidad/diario', desc: 'Todos los asientos contables registrados en el período.' },
+    { icon: BarChart, title: 'Comprobación de Saldos', accent: '#2980b9', href: '/dashboard/contabilidad/comprobacion', desc: 'Balanza de comprobación: débitos y créditos por cuenta.' },
+    { icon: DollarSign, title: 'Mayor General', accent: '#9b59b6', href: '/dashboard/contabilidad/mayor', desc: 'Movimientos por cuenta contable con saldos acumulados.' },
   ]
   return (
     <div className="space-y-6">
@@ -624,14 +624,14 @@ function ContabilidadTab() {
 
 export default function ReportesPage() {
   const [activeTab, setActiveTab] = useState('ventas')
-  const [period,    setPeriod]    = useState('month')
-  const [from,      setFrom]      = useState(() => {
+  const [period, setPeriod] = useState('month')
+  const [from, setFrom] = useState(() => {
     const d = new Date(); d.setDate(1)
     return d.toISOString().split('T')[0]
   })
-  const [to, setTo]         = useState(() => new Date().toISOString().split('T')[0])
+  const [to, setTo] = useState(() => new Date().toISOString().split('T')[0])
   const [modules, setModules] = useState<string[]>(['core'])
-  const [kpis,    setKpis]    = useState<any>(null)
+  const [kpis, setKpis] = useState<any>(null)
   const [loadingKpis, setLoadingKpis] = useState(true)
 
   useEffect(() => {
@@ -646,7 +646,7 @@ export default function ReportesPage() {
       const id = profile?.company_id
       if (!id) return
 
-      const now       = new Date()
+      const now = new Date()
       const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
       const [{ data: orders }, { data: invoices }, { data: lowStock }, { data: cxcData }] =
@@ -659,10 +659,10 @@ export default function ReportesPage() {
         ])
 
       setKpis({
-        totalVentas:        (orders ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0),
-        totalFacturas:      (invoices ?? []).length,
+        totalVentas: (orders ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0),
+        totalFacturas: (invoices ?? []).length,
         productosStockBajo: (lowStock ?? []).filter(p => Number(p.stock) <= Number(p.min_stock)).length,
-        clientesCxC:        (cxcData ?? []).length,
+        clientesCxC: (cxcData ?? []).length,
       })
       setLoadingKpis(false)
     }
@@ -680,26 +680,32 @@ export default function ReportesPage() {
     <div className="space-y-6" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-          Centro de Reportes
-        </h1>
-        <p className="text-sm mt-1" style={{ color: '#64748b' }}>
-          Visualiza, analiza y descarga reportes de toda la operación
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+          <BarChart2 className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+            Centro de Reportes
+          </h1>
+          <p className="text-sm" style={{ color: '#64748b' }}>
+            Visualiza, analiza y descarga reportes de toda la operación
+          </p>
+        </div>
       </div>
 
       {/* KPIs globales del mes */}
       {loadingKpis ? (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: '#f1f5f9' }} />)}
         </div>
       ) : kpis && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={TrendingUp}    label="Ventas este mes"      value={fmt(kpis.totalVentas)}      color="#468189"  sub="órdenes activas" />
-          <StatCard icon={Receipt}       label="Facturas este mes"    value={kpis.totalFacturas}          color="#2980b9"  sub="emitidas" />
-          <StatCard icon={AlertTriangle} label="Productos bajo stock" value={kpis.productosStockBajo}     color="#e67e22"  sub="requieren reorden" />
-          <StatCard icon={CreditCard}    label="Clientes con saldo"   value={kpis.clientesCxC}            color="#9b59b6"  sub="cuentas por cobrar" />
+          <StatCard icon={TrendingUp} label="Ventas este mes" value={fmt(kpis.totalVentas)} color="#468189" sub="órdenes activas" />
+          <StatCard icon={Receipt} label="Facturas este mes" value={kpis.totalFacturas} color="#2980b9" sub="emitidas" />
+          <StatCard icon={AlertTriangle} label="Productos bajo stock" value={kpis.productosStockBajo} color="#e67e22" sub="requieren reorden" />
+          <StatCard icon={CreditCard} label="Clientes con saldo" value={kpis.clientesCxC} color="#9b59b6" sub="cuentas por cobrar" />
         </div>
       )}
 
@@ -716,7 +722,7 @@ export default function ReportesPage() {
               className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
               style={{
                 background: period === p.value ? '#031926' : 'transparent',
-                color:      period === p.value ? '#F4E9CD' : '#64748b',
+                color: period === p.value ? '#F4E9CD' : '#64748b',
               }}>
               {p.label}
             </button>
@@ -726,7 +732,7 @@ export default function ReportesPage() {
           <div className="flex items-center gap-2">
             <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={inputStyle} />
             <span className="text-xs" style={{ color: '#94a3b8' }}>—</span>
-            <input type="date" value={to}   onChange={e => setTo(e.target.value)}   style={inputStyle} />
+            <input type="date" value={to} onChange={e => setTo(e.target.value)} style={inputStyle} />
           </div>
         )}
       </div>
@@ -739,7 +745,7 @@ export default function ReportesPage() {
               className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all"
               style={{
                 background: activeTab === t.id ? '#031926' : 'transparent',
-                color:      activeTab === t.id ? '#F4E9CD' : '#64748b',
+                color: activeTab === t.id ? '#F4E9CD' : '#64748b',
               }}>
               <t.icon className="w-4 h-4" />
               <span className="hidden sm:inline">{t.label}</span>
@@ -747,10 +753,10 @@ export default function ReportesPage() {
           ))}
         </div>
 
-        {activeTab === 'ventas'       && <VentasTab       period={period} from={from} to={to} has={has} />}
-        {activeTab === 'inventario'   && <InventarioTab   period={period} from={from} to={to} has={has} />}
-        {activeTab === 'facturacion'  && <FacturacionTab  period={period} from={from} to={to} has={has} />}
-        {activeTab === 'compras'      && <ComprasTab      period={period} from={from} to={to} has={has} />}
+        {activeTab === 'ventas' && <VentasTab period={period} from={from} to={to} has={has} />}
+        {activeTab === 'inventario' && <InventarioTab period={period} from={from} to={to} has={has} />}
+        {activeTab === 'facturacion' && <FacturacionTab period={period} from={from} to={to} has={has} />}
+        {activeTab === 'compras' && <ComprasTab period={period} from={from} to={to} has={has} />}
         {activeTab === 'contabilidad' && <ContabilidadTab />}
       </div>
 

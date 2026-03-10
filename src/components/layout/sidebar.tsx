@@ -20,19 +20,19 @@ import { Lock } from 'lucide-react'
 import { MODULE_ROUTES } from '@/lib/permissions'
 
 const ALL_NAV_ITEMS = [
-  { href: '/dashboard',                label: 'Dashboard',      icon: LayoutDashboard },
-  { href: '/dashboard/inventario',     label: 'Inventario',     icon: Boxes           },
-  { href: '/dashboard/movimientos',    label: 'Movimientos',    icon: ArrowLeftRight  },
-  { href: '/dashboard/productos',      label: 'Productos',      icon: Package2        },
-  { href: '/dashboard/bodegas',        label: 'Bodegas',        icon: Warehouse       },
-  { href: '/dashboard/compras',        label: 'Compras',        icon: ShoppingBag     },
-  { href: '/dashboard/ordenes',        label: 'Órdenes',        icon: ShoppingCart    },
-  { href: '/dashboard/clientes',       label: 'Clientes',       icon: Users           },
-  { href: '/dashboard/facturacion',    label: 'Facturación',    icon: Receipt         },
-  { href: '/dashboard/contabilidad',   label: 'Contabilidad',   icon: BookOpen        },
-  { href: '/dashboard/reportes',       label: 'Reportes',       icon: BarChart2       },
-  { href: '/dashboard/usuarios',       label: 'Usuarios',       icon: UserCog         },
-  { href: '/dashboard/configuracion',  label: 'Configuración',  icon: Settings        },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/inventario', label: 'Inventario', icon: Boxes },
+  { href: '/dashboard/movimientos', label: 'Movimientos', icon: ArrowLeftRight },
+  { href: '/dashboard/productos', label: 'Productos', icon: Package2 },
+  { href: '/dashboard/bodegas', label: 'Bodegas', icon: Warehouse },
+  { href: '/dashboard/compras', label: 'Compras', icon: ShoppingBag },
+  { href: '/dashboard/ordenes', label: 'Órdenes', icon: ShoppingCart },
+  { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
+  { href: '/dashboard/facturacion', label: 'Facturación', icon: Receipt },
+  { href: '/dashboard/contabilidad', label: 'Contabilidad', icon: BookOpen },
+  { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart2 },
+  { href: '/dashboard/usuarios', label: 'Usuarios', icon: UserCog },
+  { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 interface SidebarProps {
@@ -111,7 +111,7 @@ export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName,
           <Package2 className="w-4 h-4" style={{ color: '#F4E9CD' }} />
         </div>
         {!collapsed && (
-          <div>
+          <div style={{ overflow: 'hidden', minWidth: 0 }}>
             <span
               className="font-bold text-base tracking-wide block"
               style={{ color: '#F4E9CD', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}
@@ -119,7 +119,11 @@ export function Sidebar({ userName, userRole, isSuperAdmin = false, companyName,
               Ordeon
             </span>
             {companyName && (
-              <span className="text-xs block" style={{ color: 'rgba(244,233,205,0.45)', whiteSpace: 'nowrap' }}>
+              <span
+                className="text-xs block truncate"
+                style={{ color: 'rgba(244,233,205,0.45)', maxWidth: '100%' }}
+                title={companyName}
+              >
                 {companyName}
               </span>
             )}

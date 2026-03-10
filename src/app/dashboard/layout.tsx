@@ -15,7 +15,7 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, is_superadmin, company_id, companies(name, active, modules)')
+    .select('full_name, role, is_superadmin, company_id, onboarding_completed, companies(name, active, modules)')
     .eq('id', user.id)
     .single()
 
@@ -31,6 +31,11 @@ export default async function DashboardLayout({
 
   // Sin empresa asignada → error
   if (!profile.company_id) redirect('/sin-empresa')
+
+  // Primer login del admin → onboarding obligatorio
+  if (profile.role === 'admin' && profile.onboarding_completed === false) {
+    redirect('/onboarding')
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f5f7f7' }}>

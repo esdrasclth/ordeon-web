@@ -17,11 +17,11 @@ import { Profile, UserRole } from '@/types'
 import { toast } from 'sonner'
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string }> = {
-  admin:       { label: 'Administrador', color: '#031926' },
-  supervisor:  { label: 'Supervisor',    color: '#468189' },
-  vendedor:    { label: 'Vendedor',      color: '#27ae60' },
-  almacen:     { label: 'Almacén',       color: '#e67e22' },
-  facturacion: { label: 'Facturación',   color: '#8e44ad' },
+  admin: { label: 'Administrador', color: '#031926' },
+  supervisor: { label: 'Supervisor', color: '#468189' },
+  vendedor: { label: 'Vendedor', color: '#27ae60' },
+  almacen: { label: 'Almacén', color: '#e67e22' },
+  facturacion: { label: 'Facturación', color: '#8e44ad' },
 }
 
 function RoleBadge({ role }: { role: UserRole }) {
@@ -50,7 +50,7 @@ export default function UsuariosPage() {
   const createUser = useCreateUser()
   const updateUser = useUpdateUser()
 
-  const [showForm, setShowForm]       = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState<Profile | null>(null)
 
   const handleCreate = async (data: any) => {
@@ -74,28 +74,36 @@ export default function UsuariosPage() {
     }
   }
 
-  const activeUsers   = users?.filter(u => u.active).length  ?? 0
+  const activeUsers = users?.filter(u => u.active).length ?? 0
   const inactiveUsers = users?.filter(u => !u.active).length ?? 0
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Usuarios
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            {activeUsers} activos
-            {inactiveUsers > 0 && (
-              <span className="ml-2" style={{ color: '#bbb' }}>· {inactiveUsers} inactivos</span>
-            )}
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <UserCog className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Usuarios
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              {activeUsers} activos
+              {inactiveUsers > 0 && (
+                <span className="ml-2" style={{ color: '#bbb' }}>· {inactiveUsers} inactivos</span>
+              )}
+            </p>
+          </div>
         </div>
-        <Button onClick={() => setShowForm(true)} style={{ background: '#468189', color: '#F4E9CD' }}>
-          <Plus className="w-4 h-4 mr-2" />
+        <button onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}>
+          <Plus className="w-4 h-4" />
           Nuevo Usuario
-        </Button>
+        </button>
       </div>
 
       {/* Tabla */}
@@ -186,10 +194,10 @@ export default function UsuariosPage() {
             >
               <p className="text-xs font-bold mb-1" style={{ color: config.color }}>{config.label}</p>
               <p className="text-xs" style={{ color: '#888', lineHeight: 1.4 }}>
-                {role === 'admin'       && 'Acceso total al sistema'}
-                {role === 'supervisor'  && 'Ver reportes y gestionar'}
-                {role === 'vendedor'    && 'Crear pedidos y ver catálogo'}
-                {role === 'almacen'     && 'Preparar y despachar pedidos'}
+                {role === 'admin' && 'Acceso total al sistema'}
+                {role === 'supervisor' && 'Ver reportes y gestionar'}
+                {role === 'vendedor' && 'Crear pedidos y ver catálogo'}
+                {role === 'almacen' && 'Preparar y despachar pedidos'}
                 {role === 'facturacion' && 'Facturar pedidos preparados'}
               </p>
             </div>

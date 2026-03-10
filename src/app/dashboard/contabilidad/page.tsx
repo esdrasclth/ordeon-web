@@ -15,48 +15,54 @@ const fmt = (n: number) =>
   `L. ${Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 
 export default function ContabilidadPage() {
-  const currentYear  = new Date().getFullYear()
-  const [fromDate]   = useState(`${currentYear}-01-01`)
-  const [toDate]     = useState(`${currentYear}-12-31`)
+  const currentYear = new Date().getFullYear()
+  const [fromDate] = useState(`${currentYear}-01-01`)
+  const [toDate] = useState(`${currentYear}-12-31`)
 
-  const { data: entries,  isLoading: eLoading }  = useJournalEntries({ from: fromDate, to: toDate })
-  const { data: accounts, isLoading: aLoading }  = useAccounts()
-  const { data: periods,  isLoading: pLoading }  = useAccountingPeriods()
-  const { data: income,   isLoading: iLoading }  = useIncomeStatement(fromDate, toDate)
-  const { data: trial,    isLoading: tLoading }  = useTrialBalance(fromDate, toDate)
+  const { data: entries, isLoading: eLoading } = useJournalEntries({ from: fromDate, to: toDate })
+  const { data: accounts, isLoading: aLoading } = useAccounts()
+  const { data: periods, isLoading: pLoading } = useAccountingPeriods()
+  const { data: income, isLoading: iLoading } = useIncomeStatement(fromDate, toDate)
+  const { data: trial, isLoading: tLoading } = useTrialBalance(fromDate, toDate)
 
   const openPeriod = periods?.find(p => p.status === 'open')
-  const totalDebit  = trial?.reduce((s, r) => s + r.totalDebit,  0) ?? 0
+  const totalDebit = trial?.reduce((s, r) => s + r.totalDebit, 0) ?? 0
   const totalCredit = trial?.reduce((s, r) => s + r.totalCredit, 0) ?? 0
-  const isBalanced  = Math.abs(totalDebit - totalCredit) < 0.01
+  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01
 
   const QUICK_LINKS = [
-    { href: '/dashboard/contabilidad/cuentas',       icon: BookOpen,     label: 'Plan de Cuentas',        desc: `${accounts?.length ?? 0} cuentas activas` },
-    { href: '/dashboard/contabilidad/diario',         icon: FileText,     label: 'Libro Diario',           desc: `${entries?.length ?? 0} asientos` },
-    { href: '/dashboard/contabilidad/mayor',          icon: BarChart3,    label: 'Libro Mayor',            desc: 'Por cuenta' },
-    { href: '/dashboard/contabilidad/comprobacion',   icon: Scale,        label: 'Balance de Comprobación',desc: isBalanced ? '✓ Balanceado' : '⚠ Revisar' },
-    { href: '/dashboard/contabilidad/balance',        icon: TrendingUp,   label: 'Balance General',        desc: 'Activos vs Pasivos' },
-    { href: '/dashboard/contabilidad/resultados',     icon: Receipt,      label: 'Estado de Resultados',   desc: income ? fmt(income.utilidadNeta) : '…' },
-    { href: '/dashboard/contabilidad/periodos',        icon: CalendarDays, label: 'Períodos Contables',     desc: openPeriod ? `Abierto: ${openPeriod.name}` : 'Sin período activo' },
-    { href: '/dashboard/contabilidad/impuestos',      icon: Receipt,      label: 'Reporte ISV/SAR',        desc: 'Honduras' },
+    { href: '/dashboard/contabilidad/cuentas', icon: BookOpen, label: 'Plan de Cuentas', desc: `${accounts?.length ?? 0} cuentas activas` },
+    { href: '/dashboard/contabilidad/diario', icon: FileText, label: 'Libro Diario', desc: `${entries?.length ?? 0} asientos` },
+    { href: '/dashboard/contabilidad/mayor', icon: BarChart3, label: 'Libro Mayor', desc: 'Por cuenta' },
+    { href: '/dashboard/contabilidad/comprobacion', icon: Scale, label: 'Balance de Comprobación', desc: isBalanced ? '✓ Balanceado' : '⚠ Revisar' },
+    { href: '/dashboard/contabilidad/balance', icon: TrendingUp, label: 'Balance General', desc: 'Activos vs Pasivos' },
+    { href: '/dashboard/contabilidad/resultados', icon: Receipt, label: 'Estado de Resultados', desc: income ? fmt(income.utilidadNeta) : '…' },
+    { href: '/dashboard/contabilidad/periodos', icon: CalendarDays, label: 'Períodos Contables', desc: openPeriod ? `Abierto: ${openPeriod.name}` : 'Sin período activo' },
+    { href: '/dashboard/contabilidad/impuestos', icon: Receipt, label: 'Reporte ISV/SAR', desc: 'Honduras' },
   ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-            Contabilidad
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-            Módulo contable — partida doble
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+              Contabilidad
+            </h1>
+            <p className="text-sm" style={{ color: '#64748b' }}>
+              Módulo contable — partida doble
+            </p>
+          </div>
         </div>
         <Link href="/dashboard/contabilidad/diario/nuevo"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-          style={{ background: '#468189', color: '#F4E9CD' }}>
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: 'linear-gradient(135deg, #468189, #031926)', color: '#fff' }}>
           <Plus className="w-4 h-4" /> Nuevo Asiento
         </Link>
       </div>

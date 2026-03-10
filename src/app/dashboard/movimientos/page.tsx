@@ -127,10 +127,10 @@ export default function MovimientosPage() {
                 movements: validLines.map(l => {
                     const prod = products?.find(p => p.id === l.product_id)
                     return {
-                        product_id:   l.product_id,
-                        quantity:     Number(l.quantity),
+                        product_id: l.product_id,
+                        quantity: Number(l.quantity),
                         product_name: prod?.name,
-                        unit_cost:    prod?.purchase_price ?? 0,
+                        unit_cost: prod?.purchase_price ?? 0,
                     }
                 }),
                 type: modalType,
@@ -185,32 +185,38 @@ export default function MovimientosPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
             {/* Header */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold"
-                        style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
-                        Movimientos de Inventario
-                    </h1>
-                    <p className="mt-1 text-sm" style={{ color: '#468189' }}>
-                        Control de entradas, salidas y ajustes de stock
-                    </p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #468189, #031926)' }}>
+                        <ArrowLeftRight className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold"
+                            style={{ color: '#031926', fontFamily: 'Georgia, serif' }}>
+                            Movimientos de Inventario
+                        </h1>
+                        <p className="text-sm" style={{ color: '#64748b' }}>
+                            Control de entradas, salidas y ajustes de stock
+                        </p>
+                    </div>
                 </div>
-                <div className="flex gap-3">
-                    <Button onClick={() => openModal('entrada')}
+                <div className="flex gap-2">
+                    <button onClick={() => openModal('entrada')}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
                         style={{ background: '#27ae60', color: '#fff' }}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Entrada
-                    </Button>
-                    <Button onClick={() => openModal('salida')}
+                        <Plus className="w-4 h-4" /> Entrada
+                    </button>
+                    <button onClick={() => openModal('salida')}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
                         style={{ background: '#d94f4f', color: '#fff' }}>
-                        <Minus className="w-4 h-4 mr-2" />
-                        Salida
-                    </Button>
-                    <Button onClick={() => openModal('ajuste')}
+                        <Minus className="w-4 h-4" /> Salida
+                    </button>
+                    <button onClick={() => openModal('ajuste')}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
                         style={{ background: '#2980b9', color: '#fff' }}>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Ajuste
-                    </Button>
+                        <RefreshCw className="w-4 h-4" /> Ajuste
+                    </button>
                 </div>
             </div>
 
@@ -423,22 +429,22 @@ export default function MovimientosPage() {
                                                 {m.notes ?? '—'}
                                             </td>
 
-                                                {/* Bodega (solo si multi_bodega activo) */}
-                                                {isMultiBodega && (
-                                                    <td className="px-4 py-3">
-                                                        {(m as any).warehouses ? (
-                                                            <span className="flex items-center gap-1.5 text-xs font-medium">
-                                                                <Warehouse className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#468189' }} />
-                                                                <span style={{ color: '#031926' }}>{(m as any).warehouses.name}</span>
-                                                                <span className="font-mono" style={{ color: '#9DBEBB' }}>{(m as any).warehouses.code}</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span style={{ color: '#ccc' }}>—</span>
-                                                        )}
-                                                    </td>
-                                                )}
+                                            {/* Bodega (solo si multi_bodega activo) */}
+                                            {isMultiBodega && (
+                                                <td className="px-4 py-3">
+                                                    {(m as any).warehouses ? (
+                                                        <span className="flex items-center gap-1.5 text-xs font-medium">
+                                                            <Warehouse className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#468189' }} />
+                                                            <span style={{ color: '#031926' }}>{(m as any).warehouses.name}</span>
+                                                            <span className="font-mono" style={{ color: '#9DBEBB' }}>{(m as any).warehouses.code}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span style={{ color: '#ccc' }}>—</span>
+                                                    )}
+                                                </td>
+                                            )}
 
-                                            </tr>
+                                        </tr>
                                     )
                                 })}
                             </tbody>
