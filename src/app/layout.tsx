@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Ordeon — Sistema de Pedidos',
-  description: 'Sistema de gestión de pedidos y ventas',
+  title: 'Ordeon — Sistema de Gestion Empresarial',
+  description: 'Sistema de Gestión Empresarial',
 }
 
 export default function RootLayout({
