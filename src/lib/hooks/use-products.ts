@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { Product } from '@/types'
+import { tryCreateJournalEntry, buildStockEntryJournalEntry } from '@/lib/accounting-integration'
 
 const supabase = createClient()
 
@@ -66,6 +67,22 @@ export function useCreateProduct() {
         .select()
         .single()
       if (error) throw error
+
+      // Si el producto se crea con stock inicial > 0, generar asiento contable
+      const initialStock = Number(product.stock ?? 0)
+      const unitCost     = Number(product.purchase_price ?? 0)
+      if (initialStock > 0 && unitCost > 0) {
+        const today   = new Date().toISOString().split('T')[0]
+        const payload = buildStockEntryJournalEntry({
+          date:        today,
+          productName: product.name,
+          quantity:    initialStock,
+          unitCost,
+          reference:   `Stock inicial — ${product.name}`,
+        })
+        await tryCreateJournalEntry(payload)
+      }
+
       return data
     },
     onSuccess: () => {
