@@ -18,6 +18,7 @@ async function getCompanyId(): Promise<string> {
 export function useAccounts() {
   return useQuery({
     queryKey: ['accounts'],
+    staleTime: 0,
     queryFn: async () => {
       const companyId = await getCompanyId()
       const { data, error } = await supabase
@@ -189,6 +190,7 @@ export function useInitializeAccounts() {
 export function useAccountBalance(accountId: string, fromDate?: string, toDate?: string) {
   return useQuery({
     queryKey: ['account-balance', accountId, fromDate, toDate],
+    staleTime: 0,
     queryFn: async () => {
       let query = supabase
         .from('journal_lines')

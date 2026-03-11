@@ -23,6 +23,7 @@ export function useJournalEntries(filters?: {
 }) {
   return useQuery({
     queryKey: ['journal-entries', filters],
+    staleTime: 0,
     queryFn: async () => {
       const companyId = await getCompanyId()
       let query = supabase
@@ -58,6 +59,7 @@ export function useJournalEntries(filters?: {
 export function useJournalEntry(id: string) {
   return useQuery({
     queryKey: ['journal-entry', id],
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('journal_entries')

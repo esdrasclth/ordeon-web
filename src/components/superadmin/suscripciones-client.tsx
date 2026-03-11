@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { CreditCard, Plus, X } from 'lucide-react'
+import { SubscriptionPaymentForm } from './subscription-payment-form'
 
 interface Subscription {
   id: string; company_id: string; status: string; plan: string
@@ -15,10 +17,10 @@ interface Payment {
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
-  activa:     { label: 'Activa',      color: '#22c55e' },
-  suspendida: { label: 'Suspendida',  color: '#f59e0b' },
-  cancelada:  { label: 'Cancelada',   color: '#ef4444' },
-  prueba:     { label: 'Prueba',      color: '#3b82f6' },
+  activa: { label: 'Activa', color: '#22c55e' },
+  suspendida: { label: 'Suspendida', color: '#f59e0b' },
+  cancelada: { label: 'Cancelada', color: '#ef4444' },
+  prueba: { label: 'Prueba', color: '#3b82f6' },
 }
 const fmt = (n: number) => `L. ${n.toLocaleString('es-HN', { minimumFractionDigits: 2 })}`
 const fmtDate = (s: string | null) => s ? new Date(s + 'T00:00:00').toLocaleDateString('es-HN') : '—'
@@ -26,7 +28,8 @@ const fmtDate = (s: string | null) => s ? new Date(s + 'T00:00:00').toLocaleDate
 export function SuscripcionesClient({ subscriptions, payments }: {
   subscriptions: Subscription[]; payments: Payment[]
 }) {
-  const [tab, setTab]   = useState<'subs' | 'pagos'>('subs')
+  const router = useRouter()
+  const [tab, setTab] = useState<'subs' | 'pagos'>('subs')
   const [showPay, setShowPay] = useState(false)
 
   const mrr = subscriptions.filter(s => s.status === 'activa').reduce((s, sub) => s + Number(sub.amount_monthly ?? 0), 0)
@@ -69,8 +72,8 @@ export function SuscripcionesClient({ subscriptions, payments }: {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl self-start" style={{ background: '#f1f5f9', width: 'fit-content' }}>
-        <button style={tabStyle('subs')}   onClick={() => setTab('subs')}>Suscripciones</button>
-        <button style={tabStyle('pagos')}  onClick={() => setTab('pagos')}>Historial de Pagos</button>
+        <button style={tabStyle('subs')} onClick={() => setTab('subs')}>Suscripciones</button>
+        <button style={tabStyle('pagos')} onClick={() => setTab('pagos')}>Historial de Pagos</button>
       </div>
 
       {tab === 'subs' && (
@@ -146,6 +149,17 @@ export function SuscripcionesClient({ subscriptions, payments }: {
             </table>
           </div>
         </div>
+      )}
+
+      {showPay && (
+        <SubscriptionPaymentForm
+          companies={Array.from(new Set([...subscriptions, ...payments].filter(x => x.companies).map(x => JSON.stringify({ id: x.company_id, name: x.companies!.name })))).map(x => JSON.parse(x))}
+          onClose={() => setShowPay(false)}
+          onSave={() => {
+            setShowPay(false)
+            router.refresh()
+          }}
+        />
       )}
     </div>
   )

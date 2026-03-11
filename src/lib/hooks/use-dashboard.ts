@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 const supabase = createClient()
 
 function getPeriodDates(period: string) {
-  const now   = new Date()
-  const end   = new Date(now)
+  const now = new Date()
+  const end = new Date(now)
   const start = new Date(now)
 
   if (period === 'today') {
@@ -30,16 +30,18 @@ export function useDashboardKpis(period: string) {
   const { start, end } = getPeriodDates(period)
   return useQuery({
     queryKey: ['dashboard-kpis', period],
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_dashboard_kpis', {
         p_start_date: start,
-        p_end_date:   end,
+        p_end_date: end,
       })
       if (error) throw error
       return data as {
-        total_sales:    number
-        total_orders:   number
-        avg_order:      number
+        total_sales: number
+        total_orders: number
+        avg_order: number
         pending_orders: number
       }
     },
@@ -49,6 +51,8 @@ export function useDashboardKpis(period: string) {
 export function useSalesTrend() {
   return useQuery({
     queryKey: ['sales-trend'],
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_sales_trend', { p_days: 30 })
       if (error) throw error
@@ -61,10 +65,12 @@ export function useTopProducts(period: string) {
   const { start, end } = getPeriodDates(period)
   return useQuery({
     queryKey: ['top-products', period],
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_top_products', {
         p_start_date: start,
-        p_end_date:   end,
+        p_end_date: end,
       })
       if (error) throw error
       return data as { name: string; code: string; total_qty: number; total_sales: number }[]
@@ -79,7 +85,7 @@ export function useTopClients(period: string) {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_top_clients', {
         p_start_date: start,
-        p_end_date:   end,
+        p_end_date: end,
       })
       if (error) throw error
       return data as { name: string; city: string; total_orders: number; total_sales: number }[]
@@ -94,7 +100,7 @@ export function useSalesByVendor(period: string) {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_sales_by_vendor', {
         p_start_date: start,
-        p_end_date:   end,
+        p_end_date: end,
       })
       if (error) throw error
       return data as { full_name: string; total_orders: number; total_sales: number }[]
@@ -189,8 +195,8 @@ export function useInvoiceStats(period: string, enabled = true) {
       if (error) { console.warn('[useInvoiceStats]', error); return null }
 
       const total_invoices = data.length
-      const total_amount   = data.reduce((s, i) => s + Number(i.total ?? 0), 0)
-      const pending        = data.filter(i => i.status === 'pending' || i.status === 'pendiente').length
+      const total_amount = data.reduce((s, i) => s + Number(i.total ?? 0), 0)
+      const pending = data.filter(i => i.status === 'pending' || i.status === 'pendiente').length
       return { total_invoices, total_amount, pending }
     },
   })
@@ -227,13 +233,13 @@ export function useAccountingKpis(period: string, enabled = true) {
       if (error) { console.warn('[useAccountingKpis]', error); return null }
 
       let ingresos = 0, costos = 0, gastos = 0
-      ;(lines ?? []).forEach(l => {
-        const type = (l as any).accounts?.type
-        const credit = Number(l.credit), debit = Number(l.debit)
-        if (type === 'ingreso') ingresos += credit - debit
-        if (type === 'costo')   costos   += debit - credit
-        if (type === 'gasto')   gastos   += debit - credit
-      })
+        ; (lines ?? []).forEach(l => {
+          const type = (l as any).accounts?.type
+          const credit = Number(l.credit), debit = Number(l.debit)
+          if (type === 'ingreso') ingresos += credit - debit
+          if (type === 'costo') costos += debit - credit
+          if (type === 'gasto') gastos += debit - credit
+        })
 
       return { ingresos, costos, gastos, utilidad: ingresos - costos - gastos, num_asientos: ids.length }
     },
@@ -260,12 +266,12 @@ export function useRecentJournalEntries(enabled = true) {
       if (error) { console.warn('[useRecentJournalEntries]', error); return [] }
 
       return (data ?? []).map(e => ({
-        id:           e.id,
+        id: e.id,
         entry_number: e.entry_number,
-        date:         e.date,
-        description:  e.description,
-        source:       e.source,
-        total_debit:  (e.journal_lines ?? []).reduce((s: number, l: any) => s + Number(l.debit), 0),
+        date: e.date,
+        description: e.description,
+        source: e.source,
+        total_debit: (e.journal_lines ?? []).reduce((s: number, l: any) => s + Number(l.debit), 0),
       }))
     },
   })
@@ -294,10 +300,10 @@ export function useComprasKpis(period: string, enabled = true) {
       if (error) { console.warn('[useComprasKpis]', error); return null }
 
       const rows = data ?? []
-      const total_oc       = rows.length
+      const total_oc = rows.length
       const total_comprado = rows.filter(r => r.status !== 'cancelada').reduce((s, r) => s + Number(r.total), 0)
-      const pendientes     = rows.filter(r => r.status === 'enviada').length
-      const en_proceso     = rows.filter(r => r.status === 'borrador' || r.status === 'recibida_parcial').length
+      const pendientes = rows.filter(r => r.status === 'enviada').length
+      const en_proceso = rows.filter(r => r.status === 'borrador' || r.status === 'recibida_parcial').length
 
       return { total_oc, total_comprado, pendientes, en_proceso }
     },
@@ -324,11 +330,11 @@ export function useRecentPurchaseOrders(enabled = true) {
       if (error) { console.warn('[useRecentPurchaseOrders]', error); return [] }
 
       return (data ?? []).map(r => ({
-        id:            r.id,
-        po_number:     r.po_number,
-        status:        r.status,
-        total:         r.total,
-        order_date:    r.order_date,
+        id: r.id,
+        po_number: r.po_number,
+        status: r.status,
+        total: r.total,
+        order_date: r.order_date,
         supplier_name: (r as any).suppliers?.name ?? '—',
       }))
     },
@@ -363,8 +369,8 @@ export function useWarehouseStockSummary(enabled = true) {
           .select('stock, products(purchase_price)')
           .eq('warehouse_id', w.id)
         const total_products = (stock ?? []).length
-        const total_units    = (stock ?? []).reduce((s, r) => s + Number(r.stock), 0)
-        const valor_total    = (stock ?? []).reduce((s, r) =>
+        const total_units = (stock ?? []).reduce((s, r) => s + Number(r.stock), 0)
+        const valor_total = (stock ?? []).reduce((s, r) =>
           s + Number(r.stock) * Number((r as any).products?.purchase_price ?? 0), 0
         )
         return { id: w.id, name: w.name, code: w.code, is_default: w.is_default, total_products, total_units, valor_total }
@@ -373,4 +379,4 @@ export function useWarehouseStockSummary(enabled = true) {
       return results
     },
   })
-}
+}

@@ -47,6 +47,9 @@ BEGIN
   WHERE company_id = p_company_id
     AND is_superadmin = TRUE;
 
+  -- NUEVO: Eliminar journal_entries antes de los profiles para evitar violación de llave foránea
+  DELETE FROM journal_entries WHERE company_id = p_company_id;
+
   -- Eliminar perfiles normales (los usuarios de la empresa, no superadmins)
   DELETE FROM profiles
   WHERE company_id = p_company_id

@@ -18,6 +18,7 @@ async function getCompanyId(): Promise<string> {
 export function useAccountingPeriods() {
   return useQuery({
     queryKey: ['accounting-periods'],
+    staleTime: 0,
     queryFn: async () => {
       const companyId = await getCompanyId()
       const { data, error } = await supabase

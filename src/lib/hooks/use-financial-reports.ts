@@ -27,6 +27,7 @@ export interface TrialBalanceLine {
 export function useTrialBalance(fromDate?: string, toDate?: string) {
   return useQuery({
     queryKey: ['trial-balance', fromDate, toDate],
+    staleTime: 0,
     queryFn: async () => {
       const companyId = await getCompanyId()
 
@@ -81,6 +82,7 @@ export interface BalanceSheetSection {
 export function useBalanceSheet(asOfDate?: string) {
   return useQuery({
     queryKey: ['balance-sheet', asOfDate],
+    staleTime: 0,
     queryFn: async () => {
       const companyId = await getCompanyId()
 
@@ -153,6 +155,7 @@ export function useBalanceSheet(asOfDate?: string) {
 export function useIncomeStatement(fromDate?: string, toDate?: string) {
   return useQuery({
     queryKey: ['income-statement', fromDate, toDate],
+    staleTime: 0,
     queryFn: async () => {
       const companyId = await getCompanyId()
 
